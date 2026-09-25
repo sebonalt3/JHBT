@@ -764,6 +764,11 @@ html, body {
 .cdp-extra b { color:var(--text-main); }
 @media (max-width:650px) { .cdp-layout { grid-template-columns:1fr; } .cdp-list { max-height:125px; grid-template-columns:repeat(2,1fr); border-right:0; border-bottom:1px solid var(--border-warm); padding-bottom:8px; } .cdp-content { padding-right:0; } .cdp-extra { grid-template-columns:1fr; } }
 .char-detail-panel .cdp-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.char-detail-panel .cdp-equip { margin-left: auto; min-width: 84px; padding: 10px 16px; font-weight: 900; }
+.char-detail-panel .cdp-equip:disabled { background: #bbb !important; border-color: #aaa !important; color: #fff !important; cursor: default; box-shadow: none !important; }
+#screen-draft .draft-deck-card.swap-target { border: 2px solid #d9a441 !important; animation: draft-swap-pulse 1s ease-in-out infinite; cursor: pointer; }
+@keyframes draft-swap-pulse { 50% { box-shadow: 0 0 0 4px rgba(217,164,65,.35); } }
+.draft-equip-cancel { margin-left: 6px; padding: 3px 10px; border: 1px solid #999; border-radius: 5px; background: #fff; color: #222; font-weight: 800; cursor: pointer; }
 .char-detail-panel .cdp-portrait {
   width: 54px; height: 54px; border-radius: 50%; border: 2px solid var(--border-warm-lit);
   overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
@@ -4275,7 +4280,7 @@ function renderAccountUI() {
       button.innerHTML = `<div class="deck-preset-title">덱 ${index + 1}${deck.length === 5 ? '' : ` · ${deck.length}/5`}</div><div class="deck-preset-icons">${icons || '＋'}</div>`;
       button.addEventListener('click', () => {
         profile.activeDeck = index;
-        state.draftSelected = currentDeck();
+        state.draftSelected = currentDeck(); draftPendingEquip = null;
         saveProfile();
         renderDraftGrid();
         $('draftGrid').scrollTop = 0;
@@ -4293,7 +4298,7 @@ function renderAccountUI() {
       button.type = 'button';
       button.textContent = `기존 ${item.slot}번 덱 불러오기`;
       button.addEventListener('click', () => {
-        state.draftSelected = item.deck.slice();
+        state.draftSelected = item.deck.slice(); draftPendingEquip = null;
         renderDraftGrid();
         $('draftGrid').scrollTop = 0;
         $('draftSaveStatus').textContent = `기존 ${item.slot}번 덱을 불러왔습니다. 현재 슬롯에 적용하려면 저장하세요.`;
@@ -5161,10 +5166,10 @@ function renderLobbyPreview() {
     wrap.appendChild(el);
   });
 }
-$('btnEnterDraft').addEventListener('click', () => { state.draftSelected = currentDeck(); renderDraftGrid(); $('draftGrid').scrollTop = 0; showScreen('draft'); });
+$('btnEnterDraft').addEventListener('click', () => { state.draftSelected = currentDeck(); draftPendingEquip = null; renderDraftGrid(); $('draftGrid').scrollTop = 0; showScreen('draft'); });
 $('btnStartGame').addEventListener('click', () => {
   const deck = currentDeck();
-  if (deck.length !== 5) { state.draftSelected = deck; renderDraftGrid(); $('draftGrid').scrollTop = 0; showScreen('draft'); return; }
+  if (deck.length !== 5) { state.draftSelected = deck; draftPendingEquip = null; renderDraftGrid(); $('draftGrid').scrollTop = 0; showScreen('draft'); return; }
   state.myDeckIds = deck;
   startMatch();
 });
@@ -5570,8 +5575,7 @@ function buildCharCard(c, opts) {
     card.addEventListener('click', (e) => {
       const act = e.target && e.target.getAttribute && e.target.getAttribute('data-act');
       if (act === 'info') { e.stopPropagation(); showCharDetail(c); return; }
-      if (!isUnlocked(c.id)) { showCharDetail(c); return; }
-      onDraftCardClick(c.id, card, { silent: true });
+      showCharDetail(c);
     });
   }
   attachTooltip(card, c);
@@ -5589,27 +5593,58 @@ function roleIcon(role) {
 }
 
 
-function onDraftCardClick(id, cardEl, opts) {
-  opts = opts || {};
-  const idx = state.draftSelected.indexOf(id);
-  if (idx >= 0) {
-    state.draftSelected.splice(idx, 1);
-    cardEl.classList.remove('selected');
-  } else {
-    if (CHAR_DB[id].rarity === 'hidden' && state.draftSelected.some(selected => CHAR_DB[selected].rarity === 'hidden')) {
-      $('draftSaveStatus').textContent = '히든 지후는 덱에 1기만 편성할 수 있습니다.';
-      return;
-    }
-    if (state.draftSelected.length >= 5) {
-      if (!opts.silent) showCharDetail(CHAR_DB[id]);
-      return;
-    }
+// 덱 편성: 카드 → 상세정보 → 장착. 덱이 꽉 차 있으면 위 덱 슬롯에서 교체할 지후를 고른다.
+// 덱 슬롯을 눌러 빼는 동작은 없다 (자리가 비는 것 방지).
+let draftPendingEquip = null;
+const DRAFT_EDITING = '편집 중 · 저장하면 이 슬롯의 덱에 적용됩니다.';
+function hiddenBlocksEquip(id, replaceIndex) {
+  return CHAR_DB[id].rarity === 'hidden'
+    && state.draftSelected.some((other, index) => index !== replaceIndex && CHAR_DB[other].rarity === 'hidden');
+}
+function setDraftPendingEquip(id) {
+  draftPendingEquip = id;
+  renderDraftDeck();
+  const status = $('draftSaveStatus');
+  if (!id) { status.textContent = DRAFT_EDITING; return; }
+  status.innerHTML = `<b>${CHAR_DB[id].name}</b> 장착 · 위에서 교체할 지후를 선택하세요. <button type="button" class="draft-equip-cancel">취소</button>`;
+  status.querySelector('.draft-equip-cancel').addEventListener('click', () => setDraftPendingEquip(null));
+  document.querySelector('#screen-draft .draft-deck-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function requestDraftEquip(id) {
+  if (!isUnlocked(id) || state.draftSelected.includes(id)) return;
+  $('cdpClose').click();
+  if (state.draftSelected.length < 5) {
+    if (hiddenBlocksEquip(id, -1)) { $('draftSaveStatus').textContent = '히든 지후는 덱에 1기만 편성할 수 있습니다.'; return; }
     state.draftSelected.push(id);
-    cardEl.classList.add('selected');
+    draftPendingEquip = null;
+    renderDraftGrid();
+    $('draftSaveStatus').textContent = DRAFT_EDITING;
+    return;
   }
-  updateDraftCount();
-  $('draftSaveStatus').textContent = '편집 중 · 저장하면 이 슬롯의 덱에 적용됩니다.';
-  if (!opts.silent) showCharDetail(CHAR_DB[id]);
+  setDraftPendingEquip(id);
+}
+function replaceDraftSlot(index) {
+  const id = draftPendingEquip;
+  if (!id) return;
+  if (hiddenBlocksEquip(id, index)) {
+    $('draftSaveStatus').textContent = '히든 지후는 덱에 1기만 편성할 수 있습니다. 히든 지후 자리를 선택하세요.';
+    return;
+  }
+  state.draftSelected[index] = id;
+  draftPendingEquip = null;
+  renderDraftGrid();
+  $('draftSaveStatus').textContent = DRAFT_EDITING;
+}
+function draftEquipButton(c) {
+  const equipped = state.draftSelected.includes(c.id);
+  const owned = isUnlocked(c.id);
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn btn-primary cdp-equip';
+  button.textContent = !owned ? '미보유' : equipped ? '장착됨' : '장착';
+  button.disabled = !owned || equipped;
+  button.addEventListener('click', () => requestDraftEquip(c.id));
+  return button;
 }
 
 function renderDraftDeck() {
@@ -5621,17 +5656,16 @@ function renderDraftDeck() {
     const character = id && CHAR_DB[id];
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'draft-deck-card' + (character ? '' : ' empty');
+    button.className = 'draft-deck-card' + (character ? '' : ' empty') + (draftPendingEquip ? ' swap-target' : '');
     button.innerHTML = character
       ? `${portraitHtml(character)}${rankBadge(character.id)}<span>${character.name}</span>`
       : `<b>＋</b><span>${index + 1}번 자리</span>`;
-    if (character) {
-      button.title = `${character.name} 덱에서 빼기`;
-      button.addEventListener('click', () => {
-        state.draftSelected.splice(index, 1);
-        renderDraftGrid();
-        $('draftSaveStatus').textContent = '편집 중 · 저장하면 이 슬롯의 덱에 적용됩니다.';
-      });
+    if (draftPendingEquip) {
+      button.title = `여기에 ${CHAR_DB[draftPendingEquip].name} 장착`;
+      button.addEventListener('click', () => replaceDraftSlot(index));
+    } else if (character) {
+      button.title = `${character.name} 상세정보`;
+      button.addEventListener('click', () => showCharDetail(character));
     }
     wrap.appendChild(button);
   }
@@ -5642,7 +5676,7 @@ function updateDraftCount() {
   $('btnConfirmDeck').disabled = state.draftSelected.length !== 5;
   renderDraftDeck();
   document.querySelectorAll('#draftGrid .char-card').forEach(card => {
-    if (!isUnlocked(card.dataset.id) || (!state.draftSelected.includes(card.dataset.id) && state.draftSelected.length >= 5)) card.classList.add('disabled');
+    if (!isUnlocked(card.dataset.id)) card.classList.add('disabled');
     else card.classList.remove('disabled');
   });
 }
@@ -5746,6 +5780,7 @@ function showCharDetail(c, unit) {
       </div>
     </div>
   `;
+  if (!unit && state.screen === 'draft') body.querySelector('.cdp-head')?.appendChild(draftEquipButton(c));
   if (!unit && state.screen === 'draft' && isUnlocked(c.id)) {
     const step = rankIndex(c.id);
     const cost = step < 3 ? RANK_SHARD_COSTS[c.rarity][step] : 0;
@@ -9813,6 +9848,10 @@ const PATCH_NOTES = {
       ] },
       { title: '뽑기', items: [
         { emoji:'✦', name:'오늘의 지후', tag:'fix', color:'#d9bd67', desc:'오늘의 지후는 픽업 뽑기에서만 표시합니다. 일반 뽑기에서 픽업으로 오해하던 문제를 고쳤습니다.' }
+      ] },
+      { title: '덱 편성', items: [
+        { emoji:'▤', name:'장착 버튼', tag:'adjust', color:'#83b48c', desc:'지후를 누르면 상세정보가 열리고 장착 버튼으로 덱에 넣습니다. 덱이 꽉 차 있으면 위 덱 슬롯에서 교체할 지후를 고릅니다. 이미 장착한 지후는 버튼이 회색으로 바뀝니다.' },
+        { emoji:'✓', name:'덱 슬롯', tag:'fix', color:'#83b48c', desc:'덱 슬롯의 지후를 눌러도 빠지지 않아 자리가 비지 않습니다. 대신 상세정보가 열립니다.' }
       ] }
     ]
   },
