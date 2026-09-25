@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <!--
-릴레이 작업 인계: 이 게임은 여러 AI 에이전트가 한도에 따라 작업을 이어받습니다.
-다음 담당자는 README.md의 릴레이 작업 지침과 직전 작업 내역을 먼저 확인하세요.
-이 파일은 화면·게임 흐름·전투·패치노트를 담고, 기본 수치는 character-balance.js에 있습니다.
-지후 능력을 바꿀 때 두 파일의 수치/설명과 패치노트를 함께 확인하고, 초상화는 portraits/에 둡니다.
-작업 완료 전 실제 브라우저에서 해당 흐름을 확인하고 전체 ZIP과 단독 업로드용 index.html을 다시 만드세요.
+지후배틀 — 이 파일 하나가 게임 전체입니다 (빌드 과정 없음).
+수치는 CHARACTER_BALANCE, 캐릭터 정의는 CHAR_DB, 초상화는 PORTRAITS(base64), 패치노트는 PATCH_NOTES.
+지후 능력을 바꿀 때는 수치·설명·패치노트를 함께 맞추세요.
 -->
 <html lang="ko" data-theme="light">
 <head>
@@ -2490,9 +2488,7 @@ html[data-theme="light"] .leaderboard-detail-hero span { color:#6b5018; }
 </div></div>
 
 <script>
-// 릴레이 작업: 여러 AI 에이전트가 한도에 따라 이어서 수정합니다. 인계 시 README.md와
-// index.html 상단 주석을 확인하고, 수치 변경은 인게임 설명·패치노트·실제 전투와 대조하세요.
-// 이 파일은 기본 수치와 스킬 상수, index.html은 캐릭터 정의 및 전투 동작의 기준입니다.
+// 지후별 기본 수치와 스킬 상수. 설명(CHAR_DB)·패치노트와 함께 맞춘다.
 const CHARACTER_BALANCE = {
   fire: {
     hp: 2500, atk: 10, atkSpeed: 0.1, range: 180, speed: 110,
