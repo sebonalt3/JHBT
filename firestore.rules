@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validDeck(deck) {
+      return deck is list && deck.size() <= 5
+        && (deck.size() < 1 || (deck[0] is string && deck[0].matches('^[a-z_]{1,24}$')))
+        && (deck.size() < 2 || (deck[1] is string && deck[1].matches('^[a-z_]{1,24}$')))
+        && (deck.size() < 3 || (deck[2] is string && deck[2].matches('^[a-z_]{1,24}$')))
+        && (deck.size() < 4 || (deck[3] is string && deck[3].matches('^[a-z_]{1,24}$')))
+        && (deck.size() < 5 || (deck[4] is string && deck[4].matches('^[a-z_]{1,24}$')));
+    }
+
+    function validLeaderboard(data) {
+      return data.keys().hasAll(['nickname', 'level', 'deck', 'wins', 'losses', 'playMs', 'favorite', 'updatedAt'])
+        && data.keys().hasOnly(['nickname', 'level', 'deck', 'wins', 'losses', 'playMs', 'favorite', 'updatedAt'])
+        && data.nickname is string && data.nickname.size() > 0 && data.nickname.size() <= 12
+        && data.level is int && data.level >= 1 && data.level <= 100
+        && validDeck(data.deck)
+        && data.wins is int && data.wins >= 0 && data.wins <= 99999
+        && data.losses is int && data.losses >= 0 && data.losses <= 99999
+        && data.playMs is int && data.playMs >= 0 && data.playMs <= 315360000000
+        && data.favorite is string && (data.favorite == '' || data.favorite.matches('^[a-z_]{1,24}$'))
+        && data.updatedAt is timestamp;
+    }
+
+    function validBackup(data) {
+      return data.keys().hasAll(['payload', 'updatedAt'])
+        && data.keys().hasOnly(['payload', 'updatedAt'])
+        && data.payload is string && data.payload.size() <= 100000
+        && data.updatedAt is timestamp;
+    }
+
+    match /backups/{userId} {
+      allow get, delete: if owner(userId);
+      allow create, update: if owner(userId) && validBackup(request.resource.data);
+    }
+
+    match /leaderboard/{userId} {
+      allow get, list: if true;
+      allow delete: if owner(userId);
+      allow create, update: if owner(userId) && validLeaderboard(request.resource.data);
+    }
+  }
+}
