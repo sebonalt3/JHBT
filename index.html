@@ -2192,6 +2192,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
       <nav class="gacha-nav" aria-label="뽑기 종류">
         <button type="button" class="active" data-gacha-view="normal">일반 뽑기</button>
         <button type="button" data-gacha-view="pickup">픽업 뽑기</button>
+        <button type="button" data-gacha-view="newpickup" id="btnGachaNewPickup" hidden>신규 지후 픽업</button>
         <button type="button" data-gacha-view="history">뽑기 내역</button>
       </nav>
       <section class="gacha-spotlight" id="gachaSpotlight" aria-label="지후 전투 미리보기">
@@ -4281,7 +4282,7 @@ function normalizeProfile(raw) {
     shards: raw.shards && typeof raw.shards === 'object' ? Object.fromEntries(Object.entries(raw.shards).filter(([id]) => validIds.has(id)).map(([id,count]) => [id,safeCount(count)])) : {},
     ranks: raw.ranks && typeof raw.ranks === 'object' ? Object.fromEntries(Object.entries(raw.ranks).filter(([id]) => validIds.has(id)).map(([id,level]) => [id,Math.min(3,safeCount(level))])) : {},
     masteryCounts: raw.masteryCounts && typeof raw.masteryCounts === 'object' ? Object.fromEntries(Object.entries(raw.masteryCounts).filter(([id]) => validIds.has(id)).map(([id,count]) => [id,safeCount(count)])) : {},
-    gachaHistory: Array.isArray(raw.gachaHistory) ? raw.gachaHistory.filter(item => item && validIds.has(item.id) && ['normal','pickup'].includes(item.mode)).slice(-200).map(item => ({ id:item.id, mode:item.mode, duplicate:!!item.duplicate, at:Math.max(0,Number(item.at)||0) })) : [],
+    gachaHistory: Array.isArray(raw.gachaHistory) ? raw.gachaHistory.filter(item => item && validIds.has(item.id) && ['normal','pickup','newpickup'].includes(item.mode)).slice(-200).map(item => ({ id:item.id, mode:item.mode, duplicate:!!item.duplicate, at:Math.max(0,Number(item.at)||0) })) : [],
     decks,
     archivedDecks,
     activeDeck,
@@ -4810,6 +4811,21 @@ window.addEventListener('message', event => {
     if (caption && ally && enemy) caption.textContent = `${ally.name}${data.support ? ' + 화염 지후' : ''}  VS  ${enemy.name}`;
   });
 });
+// 신규 지후 픽업: 최신 패치노트의 '신규 지후' 중 전설만 나온다. 출시일(date 또는 releasedAt)부터 48시간 동안만 열린다.
+const NEW_PICKUP_HOURS = 48;
+function newPickupInfo(now = Date.now()) {
+  const version = Object.keys(PATCH_NOTES).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0];
+  const note = PATCH_NOTES[version];
+  if (!note) return null;
+  const [y, m, d] = String(note.date || '').split('.').map(Number);
+  const start = note.releasedAt ? Date.parse(note.releasedAt) : Date.parse(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T00:00:00+09:00`);
+  const endsAt = start + NEW_PICKUP_HOURS * 3600 * 1000;
+  if (!Number.isFinite(start) || now < start || now >= endsAt) return null;
+  const names = (note.sections || []).filter(section => section.title === '신규 지후')
+    .flatMap(section => section.items).filter(item => item.tag === 'new').map(item => item.name);
+  const legendIds = playableIds().filter(id => CHAR_DB[id].rarity === 'legend' && names.includes(CHAR_DB[id].name));
+  return legendIds.length ? { version, legendIds, endsAt } : null;
+}
 function dailyPickupId(day = localDayKey()) {
   const legends = playableIds().filter(id => CHAR_DB[id].rarity === 'legend').sort();
   if (!legends.length) return null;
@@ -4821,7 +4837,7 @@ function renderGachaHistory() {
   const history = profile.gachaHistory.slice().reverse();
   $('gachaHistory').innerHTML = history.length ? history.map(item => {
     const c = CHAR_DB[item.id];
-    return `<div class="gacha-history-row"><img src="${c.portrait}" alt=""><div><b>${c.name}</b><small>${item.mode === 'pickup' ? '픽업' : '일반'} · ${RARITY_LABEL[c.rarity]} · ${item.duplicate ? '조각 +10' : '신규 획득'}</small></div><time>${new Date(item.at).toLocaleString('ko-KR')}</time></div>`;
+    return `<div class="gacha-history-row"><img src="${c.portrait}" alt=""><div><b>${c.name}</b><small>${item.mode === 'newpickup' ? '신규 픽업' : item.mode === 'pickup' ? '픽업' : '일반'} · ${RARITY_LABEL[c.rarity]} · ${item.duplicate ? '조각 +10' : '신규 획득'}</small></div><time>${new Date(item.at).toLocaleString('ko-KR')}</time></div>`;
   }).join('') : '<p class="settlement-note">뽑기 내역이 없습니다.</p>';
 }
 function renderGachaView(view = gachaView) {
@@ -4833,6 +4849,23 @@ function renderGachaView(view = gachaView) {
   $('gachaHistory').hidden = !history;
   document.querySelectorAll('[data-gacha-view]').forEach(button => button.classList.toggle('active',button.dataset.gachaView === view));
   if (history) {stopCombatPreview($('gachaPreview')); renderGachaHistory(); return;}
+  const newPickup = newPickupInfo();
+  $('btnGachaNewPickup').hidden = !newPickup;
+  if (newPickup) $('btnGachaNewPickup').textContent = `${newPickup.version} 신규 지후 픽업`;
+  if (view === 'newpickup' && !newPickup) return renderGachaView('normal');
+  if (view === 'newpickup') {
+    stopCombatPreview($('gachaPreview'));
+    $('gachaSpotlight').hidden = true;
+    document.querySelector('.gacha-layout')?.classList.add('no-spotlight');
+    const left = Math.max(0, newPickup.endsAt - Date.now());
+    $('gachaTitle').textContent = `${newPickup.version} 신규 지후 픽업`;
+    $('gachaOdds').innerHTML = '1회: 전설 3.3% · 영웅 10% · 희귀 38.5% · 일반 48.2%<br>'
+      + '지후 상자: 일반·희귀 8기 확정 · 영웅 55% → 성공 시 전설 60%<br>'
+      + `전설은 ${newPickup.version} 신규 지후만 등장합니다 (${newPickup.legendIds.map(id => CHAR_DB[id].name).join(', ')}). 히든은 등장하지 않습니다.<br>`
+      + `종료까지 ${Math.floor(left / 3600000)}시간 ${Math.floor(left / 60000) % 60}분`;
+    $('gachaDecor').innerHTML = newPickup.legendIds.slice(0, 6).map(id => `<img src="${CHAR_DB[id].portrait}" alt="">`).join('');
+    return;
+  }
   const pickup = view === 'pickup';
   const day = localDayKey();
   pickupDayShown = day;
@@ -4848,7 +4881,7 @@ function renderGachaView(view = gachaView) {
   $('gachaOdds').innerHTML = (pickup
     ? '1회: 전설 3.3% · 영웅 10% · 희귀 38.5% · 일반 48.2%<br>'
     : '1회: 히든 0.3% · 전설 3% · 영웅 10% · 희귀 38.5% · 일반 48.2%<br>')
-    + '지후 상자: 일반·희귀 8기 확정 · 영웅 55% → 성공 시 전설 50%' + (pickup ? '' : ' → 성공 시 히든 20%') + '<br>'
+    + '지후 상자: 일반·희귀 8기 확정 · 영웅 55% → 성공 시 전설 60%' + (pickup ? '' : ' → 성공 시 히든 20%') + '<br>'
     + (pickup ? '전설 등장 시 66.6% 확률로 오늘의 픽업 지후가 등장합니다. 히든은 등장하지 않습니다.' : '중복은 해당 지후 조각 10개로 바뀝니다.');
   const artIds = playableIds().filter(id => CHAR_DB[id].rarity !== 'hidden').slice(0,6);
   $('gachaDecor').innerHTML = artIds.map(id => `<img src="${CHAR_DB[id].portrait}" alt="">`).join('');
@@ -4856,29 +4889,31 @@ function renderGachaView(view = gachaView) {
   else stopCombatPreview($('gachaPreview'));
 }
 function rollGachaCharacter(mode = gachaView) {
-  const pickup = mode === 'pickup';
+  const pickup = mode === 'pickup' || mode === 'newpickup';
   const weights = pickup
     ? [{rarity:'legend',weight:3.3},{rarity:'epic',weight:10},{rarity:'rare',weight:38.5},{rarity:'common',weight:48.2}]
     : [{rarity:'hidden',weight:.3},{rarity:'legend',weight:3},{rarity:'epic',weight:10},{rarity:'rare',weight:38.5},{rarity:'common',weight:48.2}];
   let roll = Math.random() * 100;
   let rarity = 'common';
   for (const item of weights) { roll -= item.weight; if (roll < 0) { rarity = item.rarity; break; } }
-  if (pickup && rarity === 'legend' && Math.random() < .666) return dailyPickupId();
-  const candidates = playableIds().filter(id => CHAR_DB[id].rarity === rarity);
-  return candidates[Math.floor(Math.random() * candidates.length)] || STARTER_IDS[0];
+  return pickGachaCharacter(rarity, mode);
 }
 // 지후 상자: 일반·희귀 8기 확정 + 계단식 칸. 앞 칸이 성공해야 다음 칸에 도전한다.
-// 영웅 55% → 전설 50% → 히든 20% (픽업은 히든 칸 없음). 결과는 8~11기.
+// 영웅 55% → 전설 60% → 히든 20% (픽업은 히든 칸 없음). 결과는 8~11기.
 const GACHA_BOX_BASE = 8;
-const GACHA_BOX_STEPS = { normal: [['epic', 55], ['legend', 50], ['hidden', 20]], pickup: [['epic', 55], ['legend', 50]] };
+const GACHA_BOX_STEPS = { normal: [['epic', 55], ['legend', 60], ['hidden', 20]], pickup: [['epic', 55], ['legend', 60]] };
 function pickGachaCharacter(rarity, mode = gachaView) {
   if (mode === 'pickup' && rarity === 'legend' && Math.random() < .666) return dailyPickupId();
+  if (mode === 'newpickup' && rarity === 'legend') {
+    const ids = newPickupInfo()?.legendIds || [];
+    if (ids.length) return ids[Math.floor(Math.random() * ids.length)];
+  }
   const candidates = playableIds().filter(id => CHAR_DB[id].rarity === rarity);
   return candidates[Math.floor(Math.random() * candidates.length)] || STARTER_IDS[0];
 }
 function rollGachaBox(mode = gachaView) {
   const ids = Array.from({ length: GACHA_BOX_BASE }, () => pickGachaCharacter(Math.random() < 60 / 90 ? 'common' : 'rare', mode));
-  for (const [rarity, chance] of GACHA_BOX_STEPS[mode === 'pickup' ? 'pickup' : 'normal']) {
+  for (const [rarity, chance] of GACHA_BOX_STEPS[mode === 'normal' ? 'normal' : 'pickup']) {
     if (Math.random() * 100 >= chance) break;
     ids.push(pickGachaCharacter(rarity, mode));
   }
@@ -5091,6 +5126,7 @@ function performGacha(box, cost) {
   }
   const mode = gachaView;
   if (mode === 'history') return;
+  if (mode === 'newpickup' && !newPickupInfo()) { renderGachaView('normal'); return; }
   profile.diamonds -= cost;
   const results = [];
   for (const id of box ? rollGachaBox(mode) : [rollGachaCharacter(mode)]) {
@@ -5444,7 +5480,7 @@ $('btnStartGame').addEventListener('click', () => {
 $('btnOpenGacha').addEventListener('click', () => { $('gachaResult').innerHTML = ''; renderAccountUI(); showScreen('gacha'); renderGachaView('normal'); });
 $('btnGachaBack').addEventListener('click', () => { stopCombatPreview($('gachaPreview')); showScreen('lobby'); });
 document.querySelectorAll('[data-gacha-view]').forEach(button => button.addEventListener('click', () => renderGachaView(button.dataset.gachaView)));
-setInterval(() => { if (state.screen === 'gacha' && localDayKey() !== pickupDayShown) renderGachaView(gachaView); }, 30000);
+setInterval(() => { if (state.screen === 'gacha' && (localDayKey() !== pickupDayShown || gachaView === 'newpickup' || $('btnGachaNewPickup').hidden !== !newPickupInfo())) renderGachaView(gachaView); }, 30000);
 $('btnGachaOne').addEventListener('click', () => performGacha(false, 100));
 $('btnGachaEleven').addEventListener('click', () => performGacha(true, 1000));
 
