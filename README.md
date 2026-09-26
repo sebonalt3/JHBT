@@ -1,6 +1,6 @@
 # 지후배틀
 
-웹에서 플레이: https://sebonalt3.github.io/JHBT/
+웹에서 플레이: https://wwwsebon-cloud.github.io/JHBT/
 
 `index.html` 하나로 실행됩니다. 화면·게임 흐름·전투·캐릭터 수치(`CHARACTER_BALANCE`)·초상화(`PORTRAITS`, base64)·Firebase 설정·패치노트(`PATCH_NOTES`)가 모두 이 파일 안에 있습니다. 빌드 과정은 없습니다.
 
