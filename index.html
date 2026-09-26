@@ -1598,17 +1598,25 @@ body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after 
 
 .matchup-overlay { position:absolute; inset:0; z-index:45; display:none; align-items:center; justify-content:center; background:rgba(18,18,16,.92); color:white; padding:20px; }
 .matchup-overlay.show { display:flex; }
-.matchup-card { width:min(720px,100%); text-align:center; }
-.matchup-title { font-size:32px; margin-bottom:18px; }
-.matchup-decks { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:14px; }
-.matchup-side { padding:16px 10px; border:1px solid rgba(255,255,255,.16); border-radius:16px; background:rgba(255,255,255,.06); }
-.matchup-side h3 { font-size:14px; margin-bottom:10px; }
-.matchup-roster { display:flex; justify-content:center; flex-wrap:wrap; gap:6px; }
-.matchup-unit { width:58px; }
-.matchup-unit img { width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid white; background:#eee; }
-.matchup-unit span { display:block; margin-top:3px; font-size:9px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.matchup-vs { font-size:24px; font-weight:1000; color:var(--accent-gold); }
-.matchup-count { margin-top:16px; font-size:13px; color:#ddd; }
+.matchup-card { width:min(820px,100%); height:100%; max-height:640px; display:flex; flex-direction:column; justify-content:space-between; gap:12px; text-align:center; }
+.matchup-player { padding:14px 12px; border-radius:16px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); display:flex; flex-direction:column; gap:12px; }
+.matchup-player.enemy { border-color:rgba(224,49,49,.55); background:linear-gradient(180deg,rgba(224,49,49,.22),rgba(255,255,255,.04)); }
+.matchup-player.ally { border-color:rgba(47,179,68,.55); background:linear-gradient(0deg,rgba(47,179,68,.22),rgba(255,255,255,.04)); }
+.matchup-id { display:flex; align-items:baseline; justify-content:center; gap:10px; flex-wrap:wrap; }
+.matchup-tag { font-size:12px; font-weight:900; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.14); }
+.matchup-player.enemy .matchup-tag { background:#e03131; }
+.matchup-player.ally .matchup-tag { background:#2fb344; }
+.matchup-name { font-size:clamp(24px,5.5vw,38px); font-weight:1000; letter-spacing:.5px; text-shadow:0 2px 12px rgba(0,0,0,.6); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.matchup-level { font-size:15px; font-weight:900; color:#ffd43b; }
+.matchup-roster { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+.matchup-unit { min-width:0; }
+.matchup-unit img { width:100%; max-width:108px; aspect-ratio:1; height:auto; border-radius:50%; object-fit:cover; border:3px solid white; background:#eee; }
+.matchup-player.enemy .matchup-unit img { border-color:#ff8a8a; }
+.matchup-player.ally .matchup-unit img { border-color:#8ce99a; }
+.matchup-unit span { display:block; margin-top:4px; font-size:11px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.matchup-mid { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.matchup-vs { font-size:34px; font-weight:1000; color:#ffd43b; line-height:1; text-shadow:0 0 14px rgba(255,212,59,.5); }
+.matchup-count { font-size:13px; color:#ddd; }
 .life-transition { display:flex; justify-content:center; gap:8px; margin-top:12px; }
 .life-transition .life-pip { width:18px; height:18px; }
 .life-transition .life-pip.lost { animation:life-break .8s ease both; }
@@ -2375,13 +2383,15 @@ html.preview-mode .round-result-box { transform:scale(.5); }
       </div>
       <div class="matchup-overlay" id="matchupOverlay">
         <div class="matchup-card">
-          <div class="matchup-title title-font">BATTLE READY</div>
-          <div class="matchup-decks">
-            <div class="matchup-side"><h3>MY DECK</h3><div class="matchup-roster" id="matchupAlly"></div></div>
-            <div class="matchup-vs">VS</div>
-            <div class="matchup-side"><h3>ENEMY DECK</h3><div class="matchup-roster" id="matchupEnemy"></div></div>
+          <div class="matchup-player enemy">
+            <div class="matchup-id"><span class="matchup-tag">상대</span><b class="matchup-name" id="matchupEnemyName"></b><span class="matchup-level" id="matchupEnemyLevel"></span></div>
+            <div class="matchup-roster" id="matchupEnemy"></div>
           </div>
-          <div class="matchup-count">전투 시작까지 <b id="matchupCount">3</b>초</div>
+          <div class="matchup-mid"><span class="matchup-vs title-font">VS</span><span class="matchup-count">전투 시작까지 <b id="matchupCount">3</b>초</span></div>
+          <div class="matchup-player ally">
+            <div class="matchup-roster" id="matchupAlly"></div>
+            <div class="matchup-id"><span class="matchup-tag">나</span><b class="matchup-name" id="matchupAllyName"></b><span class="matchup-level" id="matchupAllyLevel"></span></div>
+          </div>
         </div>
       </div>
       <div class="cam-zoom" id="camZoom">
@@ -2518,7 +2528,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
 </div></div>
 <div class="app-modal" id="creditsModal" role="dialog" aria-modal="true"><div class="modal-card">
   <div class="modal-head"><h2 class="title-font">크레딧</h2><button type="button" class="modal-close" data-close-modal="creditsModal">✕</button></div>
-  <p>개발자 : 솔여닁</p><p>스크립터 : CodeRabbit</p>
+  <p>Developer : Solyening</p><p>Scripter : Coderabbit, Claude</p><p>Tester : 월1수</p><p>Contributor : Kaden, Tsukasa</p>
 </div></div>
 <div class="app-modal" id="surrenderModal" role="dialog" aria-modal="true" aria-label="항복 확인"><div class="modal-card surrender-card"><h2>항복하시겠습니까?</h2><p>항복하면 현재 게임은 패배로 기록됩니다.</p><div class="surrender-actions"><button type="button" class="btn btn-secondary" id="btnSurrenderCancel">계속하기</button><button type="button" class="btn btn-primary" id="btnSurrenderConfirm">항복하기</button></div></div></div>
 <div class="app-modal" id="leaderboardDetailModal" role="dialog" aria-modal="true"><div class="modal-card">
@@ -4782,6 +4792,19 @@ function buildEnemyDeck() {
   return deck;
 }
 
+// 랭크전 상대(봇) 닉네임
+const BOT_NICKNAMES = [
+  '감자도둑', '고양이발', '초코우유', '김치전사', '멍청한오리', '감귤소년', '왕밤빵', '토끼발', '치즈폭탄', '배고픈곰',
+  '물방울', '구름한조각', '작은망치', '콩알탄', '달빛소년', '고구마', '복숭아맛', '참새한마리', '꿀떨어짐', '얼음조각',
+  '나무늘보', '빵먹는중', '우주감자', '치킨무', '라면스프', '계란말이', '떡볶이', '붕어빵', '만두왕', '김밥한줄',
+  '초보용사', '지나가던놈', '그냥사람', '아무거나함', '잠깐만요', '나누구지', '게임중독', '거의초보', '대충함', '일단가자',
+  '뒤에서봄', '나도몰라', '이게뭐죠', '살려주세요', '실수였음', '다시한판', '오늘처음', '잠이안와', '밥먹고옴', '방금왔음',
+  '빠른거북이', '느린번개', '이상한사람', '조용한사자', '화난두더지', '웃는호랑이', '졸린여우', '배부른돼지', '까만참새', '하얀너구리',
+  '빨간문어', '파란고래', '노란병아리', '보라토끼', '초록개구리', '회색늑대', '달리는오리', '날아가는돼지', '숨어있는곰', '점프하는개',
+  '번개콩', '불꽃감자', '얼음고양이', '그림자토끼', '별빛여우', '달토끼', '우주너구리', '은하참새', '별먹는곰', '행성주먹',
+  'ㅇㅇ', 'ㅋㅋㅋ', 'ㄱㄱ', '아무닉네임', '닉네임없음', '이름없음', '익명의유저', '유저123', '플레이어01', '플레이어77',
+  'Guest_01', 'NewPlayer', 'RandomGuy', 'NoName', 'Bot아님', '사람임', '진짜유저', '자동사냥중', '접속중', '마지막한판',
+];
 function matchupUnitHtml(id) {
   const c = CHAR_DB[id];
   return `<div class="matchup-unit"><img src="${c.portrait}" alt=""><span>${c.name}</span></div>`;
@@ -4805,6 +4828,10 @@ function showMatchupPreview(next) {
   const overlay = $('matchupOverlay');
   $('matchupAlly').innerHTML = state.myDeckIds.map(matchupUnitHtml).join('');
   $('matchupEnemy').innerHTML = state.enemyDeckIds.map(matchupUnitHtml).join('');
+  $('matchupAllyName').textContent = profile.nickname || '나';
+  $('matchupAllyLevel').textContent = `Lv.${getLevelInfo(profile.totalXp).level}`;
+  $('matchupEnemyName').textContent = state.enemyName || '상대';
+  $('matchupEnemyLevel').textContent = `Lv.${state.enemyLevel || 1}`;
   overlay.classList.add('show');
   let count = 3;
   $('matchupCount').textContent = count;
@@ -6230,6 +6257,8 @@ function startMatch(mode = 'ranked') {
     state.reaperGrudges = {};
     state.castles = mode === 'castle' ? {} : null;
     state.enemyDeckIds = buildEnemyDeck();
+    state.enemyName = BOT_NICKNAMES[Math.floor(Math.random() * BOT_NICKNAMES.length)];
+    state.enemyLevel = Math.max(1, Math.min(100, getLevelInfo(profile.totalXp).level + Math.floor(Math.random() * 5) - 2));
     state.matchSettled = false;
     state.lastSettlement = null;
     resetBattlePresentation();
