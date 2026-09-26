@@ -2749,8 +2749,8 @@ const CHARACTER_BALANCE = {
   blackflame: {
     deployLimit: 1, // 출격제한: 한 진영 전장에 1기만
     hp: 3900, atk: 150, atkSpeed: 1.2, range: 270, speed: 76.5,
-    flameGaugeMax: 4, flameDashSpeed: 540, flameDashDamage: 1100, flameBounces: 3,
-    flameGuardDuration: 4, flameGuardReduction: 0.4, flameKillRefill: 0.75
+    flameGaugeMax: 5, flameDashSpeed: 585, flameDashDamage: 750, flameBounces: 3,
+    flameGuardDuration: 4, flameGuardReduction: 0.4, flameKillGauge: 4, flameEndStun: 0.5
   },
   growth: {
     hp: 1000, atk: 0, atkSpeed: 1, range: 180, speed: 22.5,
@@ -3640,7 +3640,7 @@ const CHAR_DB = {
     rarity: 'hidden', color: '#3a3a3a', portrait: PORTRAITS.blackflame, portraitDragon: PORTRAITS.blackflame_dragon,
     ...CHARACTER_BALANCE.blackflame,
     customAttack(caster, target) { blackflameAttack(caster, target); },
-    skillDesc: '공격마다 게이지가 차고 <b>4회</b> 공격하면 흑염룡이 된다. 모든 유닛을 뚫고 초당 12칸으로 가장 가까운 적에게 돌진해 지나간 적에게 <b>1100</b> 피해를 주고, 최대 3명에게 더 튕긴 뒤 돌아온다. 돌아오면 4초간 받는 피해 <b>40%</b> 감소. 돌진 중 적을 처치하면 게이지가 <b>4분의 3</b> 찬다.'
+    skillDesc: '공격마다 게이지가 차고 <b>5회</b> 공격하면 흑염룡이 된다. 모든 유닛을 뚫고 초당 13칸으로 가장 가까운 적에게 돌진해 지나간 적에게 <b>750</b> 피해를 주고, 최대 3명에게 더 튕긴 뒤 돌아온다. 마지막으로 맞은 적은 <b>0.5초</b> 기절. 돌아오면 4초간 받는 피해 <b>40%</b> 감소. 돌진 중 적을 처치하면 게이지가 <b>4칸</b> 찬다.'
   },
   growth: {
     id: 'growth', name: '성장 지후', emoji: '🔄', role: 'controller', roleLabel: '컨트롤러',
@@ -6662,7 +6662,7 @@ const DETAIL_STAT_FIELDS = {
   blackHpFraction:['흑: 대상 현재 HP 추가 피해','%'], butterflyDps:['나비 1중첩당 초당 피해'], butterflyMax:['나비 최대 중첩','중첩'],
   whiteShield:['백: 전용 쉴드'], whiteBurstRadius:['백: 쉴드 파괴 시 나비 범위','칸'], whiteBurstStacks:['백: 쉴드 파괴 시 나비','중첩'],
   flameGaugeMax:['흑염룡 변신 공격 횟수','회'], flameDashSpeed:['돌진 속도','칸'], flameDashDamage:['돌진 피해'], flameBounces:['추가 튕김','명'],
-  flameGuardDuration:['변신 해제 후 보호 지속','s'], flameGuardReduction:['보호 중 피해 감소','%'], flameKillRefill:['처치 시 게이지 충전','%'],
+  flameGuardDuration:['변신 해제 후 보호 지속','s'], flameGuardReduction:['보호 중 피해 감소','%'], flameKillGauge:['처치 시 게이지 충전','회'], flameEndStun:['돌진 마지막 대상 기절','s'],
   deployLimit:['출격 제한 (전장 최대)','기'],
   dosaDelay:['아공간 진입 대기','s'], dosaRealmDuration:['아공간 지속','s'], dosaDr:['복귀 후 피해 감소','%'], dosaDrDuration:['피해 감소 지속','s'],
   beamWarmup:['빔 차징 시간','s'], beamInterval:['빔 피해 간격','s'], beamRampInterval:['빔 피해 증가 간격','s'], beamRampDamage:['빔 증가 피해']
@@ -11401,6 +11401,7 @@ function blackflameDashStep(u, dt) {
       if (!enemy.alive || !isHostile(u, enemy) || dash.hit.has(enemy.uid)) continue;
       if (Math.hypot(enemy.x - u.x, enemy.y - u.y) > r + unitRadius(enemy)) continue;
       dash.hit.add(enemy.uid);
+      dash.lastHit = enemy;
       spawnSlash(u, enemy);
       dealDamage(u, enemy, u.def.flameDashDamage * Math.pow(LEVEL_MULT, (u.level || 1) - 1), { isSkill: true });
       if (!enemy.alive) dash.killed = true;
@@ -11420,8 +11421,14 @@ function endBlackflameDash(u) {
   u.el.classList.remove('blackflame-dash');
   battleAPI.setImage(u, u.def.portrait);
   u._flameGuard = u.def.flameGuardDuration;
-  // 돌진 중 처치하면 게이지를 일부만 채운다 (3/4 → 한 번 더 공격하면 다시 흑염룡)
-  if (dash && dash.killed) u._flameGauge = Math.max(u._flameGauge || 0, Math.floor(u.def.flameGaugeMax * u.def.flameKillRefill));
+  // 돌진 중 처치하면 게이지를 정해진 칸까지 채운다 (4칸 → 한 번 더 공격하면 다시 흑염룡)
+  if (dash && dash.killed) u._flameGauge = Math.max(u._flameGauge || 0, Math.min(u.def.flameGaugeMax, u.def.flameKillGauge));
+  // 돌진에 마지막으로 맞은 적은 잠깐 기절한다
+  const last = dash && dash.lastHit;
+  if (last && last.alive && u.def.flameEndStun) {
+    last.stun = Math.max(last.stun || 0, u.def.flameEndStun);
+    if (last.el) last.el.classList.add('stunned');
+  }
   u.atkCooldown = Math.min(u.atkCooldown, 0.3);
 }
 
@@ -12517,7 +12524,7 @@ const PATCH_NOTES = {
     date: '2026.09.27',
     sections: [
       { title: '하향', items: [
-        { emoji:'🐉', name:'흑염룡 지후', tag:'nerf', color:'#3a3a3a', desc:'돌진 피해 <b>1,900 → 1,100</b> · 돌진 속도 <b>초당 8칸 → 12칸</b> · 돌진 중 처치 시 게이지 <b>전부 → 4분의 3</b>만 충전.' },
+        { emoji:'🐉', name:'흑염룡 지후', tag:'nerf', color:'#3a3a3a', desc:'게이지 <b>4칸 → 5칸</b> · 돌진 피해 <b>1,900 → 750</b> · 돌진 속도 <b>초당 8칸 → 13칸</b> · 돌진 중 처치 시 게이지 <b>전부 → 4칸</b>만 충전 · 돌진에 마지막으로 맞은 적 <b>0.5초 기절</b> (신규).' },
         { emoji:'✧', name:'제네시스 지후', tag:'nerf', color:'#d9d9e1', desc:'자신 피해 감소 <b>99% → 90%</b> · 아군 피해 감소 지속 <b>9초 → 3초</b>.' },
         { emoji:'🐲', name:'드래곤 지후', tag:'nerf', color:'#c0392b', portraitKey:'dragon', desc:'ATK <b>400 → 250</b> · HP <b>4,800 → 4,100</b>.' },
         { emoji:'🌌', name:'차원 지후', tag:'nerf', color:'#7b3fe0', portraitKey:'dimension', desc:'아공간 <b>6초 → 3초</b> · 아공간 ATK <b>600×2 → 450×2</b> · 공포 <b>아공간 내내 → 0.5초</b>.' },
