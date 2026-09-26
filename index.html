@@ -4550,7 +4550,6 @@ const state = {
   castles: null,
   deadThisRound: { ally: [], enemy: [] },
   maxUnits: 10,
-  mergeSourceUid: null,
   arenaAlly: {},
   arenaEnemy: {},
   arenaAllyLevels: {},
@@ -5972,7 +5971,6 @@ function leaveBattle() {
   state.castles = null;
   state.phase = 'idle';
   state.pendingPick = false;
-  state.mergeSourceUid = null;
   pendingPoolIdx = null;
   openPoolSheet(false);
   clearArenaUnits();
@@ -7977,35 +7975,6 @@ function spawnUnit(side, x, y, charId, opts) {
       }
       // 다른 유닛 클릭 시 스탯 패널 열지 않음
       return;
-    }
-    // 배치 중 같은 종류끼리 필드 합성 (이미 출전 중)
-    if (state.phase === 'deploy' && unit.side === 'ally' && state.mergeSourceUid) {
-      const src = state.units.find(u => u.uid === state.mergeSourceUid);
-      if (src && src.alive && src.uid !== unit.uid && src.charId === unit.charId) {
-        // 소스 제거 + 타겟 레벨업
-        levelUpUnit(unit);
-        const pl = state.placements.find(p => p.id === unit.placementId) || state.placements.find(p => p.side === unit.side && Math.abs(p.x - unit.x) < 2 && Math.abs(p.y - unit.y) < 2);
-        if (pl) pl.level = unit.level;
-        // remove source unit
-        src.alive = false;
-        src.el.classList.add('dead');
-        if (src.ringEl) src.ringEl.remove();
-        state.placements = state.placements.filter(p => p.id !== src.placementId && !(p.side === src.side && Math.abs(p.x - src.x) < 2 && Math.abs(p.y - src.y) < 2));
-        state.mergeSourceUid = null;
-        $('bottomStatusLine').innerHTML = `<b>${unit.def.name}</b> 합성 완료! Lv.${unit.level}`;
-        completeDeployAction();
-        return;
-      }
-      state.mergeSourceUid = null;
-    }
-    if (state.phase === 'deploy' && unit.side === 'ally') {
-      // 첫 클릭: 합성 소스로 지정 (같은 종류 찾기 유도)
-      const sameCount = state.units.filter(u => u.side === 'ally' && u.alive && u.charId === unit.charId).length;
-      if (sameCount >= 2) {
-        state.mergeSourceUid = unit.uid;
-        $('bottomStatusLine').innerHTML = `<b>${unit.def.name}</b> 선택 — 같은 종류를 터치해 합성하세요`;
-        return;
-      }
     }
     showCharDetail(def, unit);
     showRangeRing(unit);
@@ -12541,7 +12510,8 @@ const PATCH_NOTES = {
       { title: '히든 · 출격 규칙', items: [
         { emoji:'🎴', name:'히든 등장 규칙', tag:'system', color:'#777', desc:'덱의 히든 지후는 일반 배치 선택지에 나오지 않고, <b>2라운드부터</b> 배치 선택지마다 <b>10%</b> 확률로 한 칸을 덮어쓰고 나옵니다. 봇은 1% 확률로 히든을 덱에 넣어 오며 같은 규칙을 따릅니다.' },
         { emoji:'🚩', name:'출격 제한', tag:'new', color:'#e03131', desc:'<b>DJ·제네시스·흑염룡·폭군</b> 지후는 한 진영 전장에 <b>1기</b>만 둘 수 있습니다. 이미 있는 같은 지후에 합쳐 레벨업하는 것은 됩니다.' },
-        { emoji:'✧', name:'제네시스 지후', tag:'adjust', color:'#d9d9e1', desc:'게임당 한 번만 출전하던 규칙을 없애고 출격 제한(전장 1기)으로 바꿨습니다.' }
+        { emoji:'✧', name:'제네시스 지후', tag:'adjust', color:'#d9d9e1', desc:'게임당 한 번만 출전하던 규칙을 없애고 출격 제한(전장 1기)으로 바꿨습니다.' },
+        { emoji:'🔗', name:'필드 합성', tag:'system', color:'#888', desc:'이미 배치한 같은 지후 두 기를 눌러 합치던 기능을 없앴습니다. 배치 선택지의 지후를 같은 지후 위에 놓아 레벨업하는 것은 그대로입니다.' }
       ] },
       { title: '화면', items: [
         { emoji:'✨', name:'새 로고', tag:'new', color:'#111', desc:'인트로·로비·로딩 화면의 제목을 새 로고로 바꿨습니다. 인트로에서는 로고가 튀어나옵니다.' },
