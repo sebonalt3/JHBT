@@ -27,11 +27,30 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    // 닉네임 로그인용: 문서 ID는 'n_' + 소문자 닉네임, code 는 로그인한 계정 자신의 UID여야 한다.
+    function validNickname(key, data) {
+      return data.keys().hasAll(['owner', 'code', 'nickname', 'updatedAt'])
+        && data.keys().hasOnly(['owner', 'code', 'nickname', 'updatedAt'])
+        && data.owner == request.auth.uid
+        && data.code is string && request.auth.token.email == data.code + '@jihoo-battle.invalid'
+        && data.nickname is string && data.nickname.size() > 0 && data.nickname.size() <= 12
+        && key == 'n_' + data.nickname.lower()
+        && data.updatedAt is timestamp;
+    }
+
     function validBackup(data) {
       return data.keys().hasAll(['payload', 'updatedAt'])
         && data.keys().hasOnly(['payload', 'updatedAt'])
         && data.payload is string && data.payload.size() <= 100000
         && data.updatedAt is timestamp;
+    }
+
+    match /nicknames/{key} {
+      allow get: if true;
+      allow list: if request.auth != null && resource.data.owner == request.auth.uid;
+      allow create: if request.auth != null && validNickname(key, request.resource.data);
+      allow update: if request.auth != null && resource.data.owner == request.auth.uid && validNickname(key, request.resource.data);
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
     }
 
     match /backups/{userId} {

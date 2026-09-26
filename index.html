@@ -2105,7 +2105,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
         <input class="text-field" id="welcomePasswordConfirm" type="password" maxlength="32" autocomplete="new-password" required>
         <button type="submit" class="btn btn-primary" style="width:100%;margin-top:12px;">게임 시작</button>
       </form>
-      <button type="button" class="btn-ghost" id="btnWelcomeRecover">UID와 비밀번호로 로그인</button>
+      <button type="button" class="btn-ghost" id="btnWelcomeRecover">UID·닉네임과 비밀번호로 로그인</button>
       <div class="settlement-note" id="welcomeMessage"></div>
     </div>
   </div>
@@ -2143,6 +2143,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
         <span id="ownedMeta">보유 5기</span><span>·</span><span>덱 5기</span><span>·</span><span>라이프 4</span>
       </div>
     </div>
+    <div id="abandonNotice" class="settlement-note" hidden></div>
     <div id="attendanceNotice" class="settlement-note" hidden>🎉 신규 유저 출석부가 해금되었습니다! 출석부에서 보상을 받으세요.</div>
     <div class="lobby-2-grid">
       <button type="button" class="lobby-tile" id="btnEnterDraft"><span class="ico">01</span><div class="t">덱 설정</div><div class="d">해금한 지후로 선택한 덱 슬롯을 편성</div></button>
@@ -2489,7 +2490,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
   <div class="modal-head"><h2 class="title-font">온라인 로그인</h2><button type="button" class="modal-close" data-close-modal="restoreModal">✕</button></div>
   <p>로그인하면 이 브라우저의 게임 기록을 온라인 백업으로 바꿉니다.</p>
   <form id="restoreForm">
-    <label class="field-label" for="restoreCode">UID (8자리)</label><input class="text-field" id="restoreCode" inputmode="numeric" pattern="[1-9][0-9]{7}|[1-9][0-9]{3}" maxlength="8" autocomplete="username" required>
+    <label class="field-label" for="restoreCode">UID (8자리) 또는 닉네임</label><input class="text-field" id="restoreCode" maxlength="12" autocomplete="username" required>
     <label class="field-label" for="restorePassword">비밀번호</label><input class="text-field" id="restorePassword" type="password" maxlength="64" autocomplete="current-password" required>
     <div class="settlement-note" id="restoreMessage"></div>
     <div class="modal-actions"><button type="submit" class="btn btn-primary" id="btnConfirmRestore">로그인</button></div>
@@ -2979,6 +2980,12 @@ window.JIHOO_FIREBASE_CONFIG = {
     return String(10000000 + buffer[0] % 90000000);
   };
   const status = message => { if (callbacks) callbacks.onStatus(message); };
+  // 닉네임 로그인: nicknames/n_<소문자 닉네임> 문서가 UID를 가리킨다. 먼저 등록한 계정이 그 닉네임을 쓴다.
+  const nicknameKey = nickname => {
+    const normalized = String(nickname || '').trim().toLowerCase();
+    return normalized && !normalized.includes('/') ? 'n_' + normalized : null;
+  };
+  let claimedNicknameKey = null;
 
   function checkPassword(password) {
     if (typeof password !== 'string' || password.length < PASSWORD_MIN) throw new Error(`비밀번호는 ${PASSWORD_MIN}자 이상으로 정해 주세요.`);
@@ -3020,7 +3027,7 @@ window.JIHOO_FIREBASE_CONFIG = {
         publish().catch(() => {});
       } else {
         backupWriteBlocked = false;
-        status('온라인 미연결 · 계정을 만들거나 UID와 비밀번호로 로그인하세요');
+        status('온라인 미연결 · 계정을 만들거나 UID(또는 닉네임)와 비밀번호로 로그인하세요');
       }
     } catch (error) {
       backupWriteBlocked = true;
@@ -3058,10 +3065,42 @@ window.JIHOO_FIREBASE_CONFIG = {
     throw new Error('사용 가능한 번호를 배정하지 못했습니다. 잠시 후 다시 시도하세요.');
   }
 
-  // UID + 비밀번호로 로그인하고, 온라인 백업이 있으면 이 브라우저의 기록을 백업으로 바꾼다.
-  async function login(privateCode, password) {
+  async function lookupNickname(nickname) {
+    const key = nicknameKey(nickname);
+    if (!key) throw new Error('UID 또는 닉네임을 확인하세요.');
+    let snapshot;
+    try {
+      snapshot = await sdk.getDoc(sdk.doc(database, 'nicknames', key));
+    } catch (error) {
+      if (error.code === 'unavailable') throw new Error('네트워크 연결을 확인한 뒤 다시 시도하세요.');
+      throw new Error('지금은 닉네임으로 로그인할 수 없습니다. UID로 로그인해 주세요.');
+    }
+    if (!snapshot.exists()) throw new Error('이 닉네임으로 등록된 계정이 없습니다. UID로 로그인해 주세요.');
+    return String(snapshot.data().code || '');
+  }
+
+  // 로그인한 계정의 현재 닉네임을 등록하고, 예전에 등록한 닉네임은 지운다. 다른 계정이 먼저 쓴 닉네임은 건너뛴다.
+  async function claimNickname(nickname) {
+    const key = nicknameKey(nickname);
+    const myCode = code();
+    if (!key || !myCode || !auth.currentUser || key === claimedNicknameKey) return;
+    const owner = auth.currentUser.uid;
+    const ref = sdk.doc(database, 'nicknames', key);
+    const snapshot = await sdk.getDoc(ref);
+    if (snapshot.exists() && snapshot.data().owner !== owner) return;
+    await sdk.setDoc(ref, { owner, code: myCode, nickname: String(nickname).trim(), updatedAt: sdk.serverTimestamp() });
+    const mine = await sdk.getDocs(sdk.query(sdk.collection(database, 'nicknames'), sdk.where('owner', '==', owner)));
+    await Promise.all(mine.docs.filter(entry => entry.id !== key).map(entry => sdk.deleteDoc(entry.ref)));
+    claimedNicknameKey = key;
+  }
+
+  // UID(또는 닉네임) + 비밀번호로 로그인하고, 온라인 백업이 있으면 이 브라우저의 기록을 백업으로 바꾼다.
+  async function login(identifier, password) {
     if (!auth) throw new Error('Firebase 연결을 먼저 확인하세요.');
-    if (!UID_PATTERN.test(privateCode) || !password) throw new Error('UID(8자리)와 비밀번호를 확인하세요.');
+    if (!String(identifier || '').trim() || !password) throw new Error('UID 또는 닉네임과 비밀번호를 입력하세요.');
+    let privateCode = String(identifier).trim();
+    if (!UID_PATTERN.test(privateCode)) privateCode = await lookupNickname(privateCode);
+    if (!UID_PATTERN.test(privateCode)) throw new Error('UID 또는 닉네임을 확인하세요.');
     // 계정을 바꾸기 전 현재 계정의 예약/진행 중인 백업을 끝낸다.
     if (auth.currentUser && !backupWriteBlocked) {
       if (saveTimer) await saveNow();
@@ -3078,7 +3117,7 @@ window.JIHOO_FIREBASE_CONFIG = {
       backupWriteBlocked = previousBlock;
       if (error.code === 'auth/too-many-requests') throw new Error('시도가 너무 많습니다. 잠시 후 다시 로그인하세요.');
       if (error.code === 'auth/network-request-failed') throw new Error('네트워크 연결을 확인한 뒤 다시 시도하세요.');
-      throw new Error('UID 또는 비밀번호가 올바르지 않습니다.');
+      throw new Error('UID(닉네임) 또는 비밀번호가 올바르지 않습니다.');
     }
     let restored;
     try {
@@ -3093,6 +3132,7 @@ window.JIHOO_FIREBASE_CONFIG = {
       backupWriteBlocked = false;
       throw new Error('해당 UID의 온라인 백업이 없습니다.');
     }
+    claimedNicknameKey = null;
     status(`온라인 연결됨 · UID ${privateCode}`);
   }
 
@@ -3174,6 +3214,8 @@ window.JIHOO_FIREBASE_CONFIG = {
       masteryCounts: Object.fromEntries(Object.entries(profile.masteryCounts || {}).filter(([id, count]) => /^[a-z_]{1,24}$/.test(id) && Number.isInteger(count) && count >= 1 && count <= 9999999)),
       updatedAt: sdk.serverTimestamp()
     });
+    // 닉네임 등록은 실패해도 리더보드 갱신과 무관하다 (규칙이 아직 없는 서버 등)
+    await claimNickname(profile.nickname).catch(() => {});
   }
 
   async function leaderboard() {
@@ -4128,6 +4170,7 @@ function rarityColorVar(r) {
   return { common: 'var(--rarity-common)', rare: 'var(--rarity-rare)', epic: 'var(--rarity-epic)', legend: 'var(--rarity-legend)', hidden: 'var(--rarity-hidden)' }[r];
 }
 
+let abandonNotice = ''; // 도중에 나간 랭크전을 패배 처리했을 때 로비에 띄우는 안내
 const state = {
   screen: 'intro',
   mode: 'ranked',
@@ -4227,6 +4270,7 @@ function freshProfile() {
     playMs: 0,
     highestRewardedLevel: 1,
     pendingLevelCelebration: null,
+    activeMatch: null,
     daily: { day: '', points: 0, chestClaimed: false, progress: {}, awarded: {}, allCounted: false, shop: null },
     inventory: { epicTicket: 0, legendTicket: 0 },
     newcomer: { unlocked: false, daysClaimed: 0, lastClaimDay: '', noticePending: false },
@@ -4303,6 +4347,8 @@ function normalizeProfile(raw) {
     pendingLevelCelebration: raw.pendingLevelCelebration && typeof raw.pendingLevelCelebration === 'object'
       ? { from: Math.max(1, Number(raw.pendingLevelCelebration.from) || 1), to: Math.max(1, Number(raw.pendingLevelCelebration.to) || 1), diamonds: Math.max(0, Number(raw.pendingLevelCelebration.diamonds) || 0) }
       : null,
+    activeMatch: raw.activeMatch && typeof raw.activeMatch === 'object'
+      ? { mode: String(raw.activeMatch.mode || 'ranked'), startedAt: Math.max(0, Number(raw.activeMatch.startedAt) || 0) } : null,
     daily: {
       day: String(rawDaily.day || ''),
       points: Math.max(0, Math.floor(Number(rawDaily.points) || 0)),
@@ -4480,6 +4526,7 @@ function renderAccountUI() {
   if ($('dailyPointBadge') && profile.daily) $('dailyPointBadge').textContent = formatNumber(profile.daily.points);
   if ($('ownedMeta')) $('ownedMeta').textContent = `보유 ${developerMode ? playableIds().length : profile.unlocked.length}기`;
   if ($('attendanceNotice')) $('attendanceNotice').hidden = !profile.newcomer.noticePending;
+  if ($('abandonNotice')) { $('abandonNotice').hidden = !abandonNotice; $('abandonNotice').textContent = abandonNotice; }
   renderLobbyBoost();
   renderLobbyBadges();
   document.body.classList.toggle('reduce-motion', profile.settings.reduceMotion);
@@ -5156,6 +5203,7 @@ function performGacha(box, cost) {
 function settleMatch(won, draw, surrendered = false) {
   if (state.matchSettled) return state.lastSettlement;
   state.matchSettled = true;
+  profile.activeMatch = null;
   const usedIds = [...new Set(state.myDeckIds)].filter(id => CHAR_DB[id]);
   profile.lastDeck = usedIds.slice(0, 5);
   usedIds.forEach(id => { profile.useCount[id] = (profile.useCount[id] || 0) + 1; });
@@ -5208,6 +5256,23 @@ function settleMatch(won, draw, surrendered = false) {
   window.JihooOnline.publish().catch(() => {});
   return state.lastSettlement;
 }
+
+// 끝나지 않은 랭크전 기록이 남아 있으면 (도중에 끄거나 나감) 일반 패배와 같이 처리한다.
+function settleAbandonedMatch() {
+  if (!profile.activeMatch) return;
+  profile.activeMatch = null;
+  const xp = -(30 + Math.floor(Math.random() * 21));
+  profile.losses++;
+  profile.totalXp = Math.max(0, profile.totalXp + xp);
+  abandonNotice = `진행 중이던 랭크전을 나가서 패배로 처리되었습니다. (경험치 ${xp})`;
+  persistProfile();
+  window.JihooOnline.queueSave();
+}
+window.addEventListener('beforeunload', event => {
+  if (!profile.activeMatch || state.matchSettled || state.mode !== 'ranked') return;
+  event.preventDefault();
+  event.returnValue = '지금 나가면 패배로 처리됩니다.';
+});
 
 /* 3.2 account rewards. All claims mutate the same profile as the online backup. */
 const NEWCOMER_REWARDS = [
@@ -6158,6 +6223,9 @@ function startMatch(mode = 'ranked') {
   withLoading(mode === 'castle' ? '성뿌수기 준비중' : '랭크전 준비중', () => {
     state.mode = mode;
     state.matchStartedAt = Date.now();
+    // 랭크전 도중 창을 닫거나 새로고침하면 다음 접속 때 패배로 처리한다
+    abandonNotice = '';
+    if (mode === 'ranked') { profile.activeMatch = { mode, startedAt: state.matchStartedAt }; saveProfile(); }
     state.round = 1; state.allyLives = 4; state.enemyLives = 4; state.placements = [];
     state.reaperGrudges = {};
     state.castles = mode === 'castle' ? {} : null;
@@ -11667,12 +11735,14 @@ function showIssuedCredentials(issued) {
 
 document.addEventListener('DOMContentLoaded', () => {
   if (PREVIEW_MODE) { bootPreview(); return; }
+  settleAbandonedMatch();
   const onlineInitPromise = window.JihooOnline.init({
     getProfile: () => profile,
     getLevel: () => getLevelInfo(profile.totalXp).level,
     onStatus: message => { $('onlineStatus').textContent = message; },
     onRestore: data => {
       profile = normalizeProfile(data);
+      settleAbandonedMatch();
       persistProfile();
       renderAccountUI();
       window.JihooOnline.publish().catch(() => { $('onlineStatus').textContent = '백업을 복원했지만 리더보드 갱신에 실패했습니다.'; });
