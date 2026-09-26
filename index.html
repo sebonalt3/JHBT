@@ -2104,7 +2104,7 @@ html[data-theme="light"] .leaderboard-detail-hero span { color:#6b5018; }
 .cd-timer.urgent { color:#e03131; }
 .cd-turn { text-align:center; font-weight:800; color:#555; min-height:20px; }
 .cd-turn.mine { color:#1f7a37; }
-.cd-picks { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; max-width:560px; width:100%; margin:0 auto; }
+.cd-picks { display:grid; grid-template-columns:repeat(var(--slots,5),minmax(0,1fr)); gap:8px; max-width:calc(var(--slots,5) * 112px); width:100%; margin:0 auto; }
 .cd-slot { position:relative; aspect-ratio:1; border-radius:12px; background:#fff; border:2px solid var(--rc,#ccc); display:grid; place-items:center; overflow:hidden; }
 .cd-slot img { width:74%; height:74%; object-fit:contain; margin-bottom:12px; }
 .cd-slot small { position:absolute; bottom:3px; left:2px; right:2px; font-size:10px; font-weight:800; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -2148,6 +2148,22 @@ html[data-theme="light"] .leaderboard-detail-hero span { color:#6b5018; }
   .cd-phase { font-size:18px; } .cd-timer { font-size:24px; }
   .cd-player b { font-size:15px; }
 }
+/* 드래프트전·경쟁전 추가 */
+.cd-mode { font-size:12px; font-weight:900; letter-spacing:.08em; color:#777; }
+.cd-level { display:inline-block; padding:2px 9px; border-radius:999px; background:#222; color:#fff; font-size:12px; font-weight:900; }
+.cd-card.selected { background:#fff4d6; border-color:#e0a800; box-shadow:0 0 0 3px rgba(224,168,0,.35); }
+.cd-snake-order { display:flex; justify-content:center; gap:6px; margin-bottom:8px; }
+.cd-snake-order span { width:30px; height:30px; display:grid; place-items:center; border-radius:8px; font-weight:900; font-size:13px; border:2px solid #ccc; color:#999; background:#fafafa; }
+.cd-snake-order span.ally { border-color:#8ce99a; }
+.cd-snake-order span.enemy { border-color:#ff8a8a; }
+.cd-snake-order span.done { color:#fff; background:#999; border-color:#999; }
+.cd-snake-order span.now { color:#fff; background:#222; border-color:#222; transform:scale(1.12); }
+.lb-tabs { display:flex; justify-content:center; gap:6px; }
+.lb-tabs button { min-width:96px; padding:8px 14px; border:1px solid #aaa; border-radius:6px; background:#fff; color:#222; font-weight:900; cursor:pointer; }
+.lb-tabs button.on { background:#1b1b1b; color:#fff; border-color:#1b1b1b; }
+.comp-entry { cursor:default; }
+.comp-tier { display:flex; align-items:center; gap:6px; }
+.comp-tier small { font-size:12px; }
 /* 전투 미리보기 창(?preview=): 전장만 남긴다. */
 html.preview-mode, html.preview-mode body { overflow:hidden; background:#171717; }
 html.preview-mode .screen:not(#screen-battle), html.preview-mode .battle-topbar, html.preview-mode .battle-bottom,
@@ -2263,14 +2279,15 @@ html.preview-mode .round-result-box { transform:scale(.5); }
         <button type="button" class="lobby-tile primary" id="btnStartGame"><span class="ico">04</span><div class="t">게임 시작</div><div class="d">선택한 덱으로 라이프 4 랭크전 시작</div></button>
         <button type="button" class="boost-fire-btn" id="btnLobbyBoost" title="경험치 ×2 · 부스트 중 승리 시 다이아 100~200">🔥 부스트</button>
       </div>
-      <button type="button" class="lobby-tile comp-tile" id="btnStartComp"><span class="ico">05</span><div class="t">경쟁전</div><div class="d" id="compTileDesc">아이언 · 0 TP · 드래프트 3판 2선승</div></button>
+      <button type="button" class="lobby-tile" id="btnStartDraftBattle"><span class="ico">05</span><div class="t">드래프트전</div><div class="d">5:5 밴픽 · 3판 2선승 · 승리 시 경험치</div></button>
+      <button type="button" class="lobby-tile comp-tile" id="btnStartComp"><span class="ico">06</span><div class="t">경쟁전</div><div class="d" id="compTileDesc">아이언 · 0 TP · 3:3 밴픽 · 3판 2선승</div></button>
       <button type="button" class="lobby-tile" id="btnOpenQuests"><span class="ico">07</span><div class="t">일일 퀘스트</div><div class="d"><span id="dailyPointBadge">100</span> / 600P · 보상 ◆500</div></button>
       <button type="button" class="lobby-tile" id="btnOpenLeaderboard"><span class="ico">08</span><div class="t">리더보드</div><div class="d">레벨 · 마지막 덱 · 플레이어 정보</div></button>
       <button type="button" class="lobby-tile" id="btnOpenInventory"><span class="ico">09</span><div class="t">인벤토리</div><div class="d">재화 · 모집권 · 경험치 부스트</div></button>
       <button type="button" class="lobby-tile" id="btnOpenAttendance"><span class="ico">10</span><div class="t">신규 유저 출석부</div><div class="d">첫 게임 완료 후 해금 · 7일 보상</div></button>
       <button type="button" class="lobby-tile" id="btnOpenAchievements"><span class="ico">11</span><div class="t">업적</div><div class="d">플레이 기록으로 다이아 획득</div></button>
     </div>
-    <button type="button" class="lobby-patch lobby-patch-title" id="btnLobbyPatch">v3.6 — 경쟁전 · 티어 시스템 <span>패치노트 보기 ↗</span></button>
+    <button type="button" class="lobby-patch lobby-patch-title" id="btnLobbyPatch">v3.6 — 경쟁전 · 드래프트전 · 티어 <span>패치노트 보기 ↗</span></button>
   </div>
 
   <!-- 덱 선택 화면 -->
@@ -2303,7 +2320,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
   <div id="screen-compdraft" class="screen">
     <div class="cd-head">
       <div class="cd-player enemy"><span class="cd-order" id="cdEnemyOrder"></span><b id="cdEnemyName"></b><span id="cdEnemyTier"></span></div>
-      <div class="cd-center"><div class="cd-phase" id="cdPhase">BAN</div><div class="cd-timer" id="cdTimer"></div></div>
+      <div class="cd-center"><div class="cd-mode" id="cdMode"></div><div class="cd-phase" id="cdPhase">BAN</div><div class="cd-timer" id="cdTimer"></div></div>
       <div class="cd-player ally"><span class="cd-order" id="cdAllyOrder"></span><b id="cdAllyName"></b><span id="cdAllyTier"></span></div>
     </div>
     <div class="cd-picks enemy" id="cdEnemyPicks"></div>
@@ -2396,6 +2413,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
   <!-- 패치 노트 -->
   <div id="screen-leaderboard" class="screen">
     <div class="feature-header"><button type="button" class="btn-ghost" id="btnLeaderboardBack">← 로비</button><h2 class="title-font">리더보드</h2><span></span></div>
+    <div class="lb-tabs" role="tablist"><button type="button" data-lb="level" class="on">레벨</button><button type="button" data-lb="comp">경쟁전</button></div>
     <p class="settlement-note" id="leaderboardMessage">온라인 순위를 불러오는 중...</p>
     <div class="leaderboard-list" id="leaderboardList"></div>
   </div>
@@ -3396,6 +3414,24 @@ window.JIHOO_FIREBASE_CONFIG = {
     });
     // 닉네임 등록은 실패해도 리더보드 갱신과 무관하다 (규칙이 아직 없는 서버 등)
     await claimNickname(profile.nickname).catch(() => {});
+    // 경쟁전 리더보드는 따로 둔다. 경쟁전을 한 판이라도 한 사람만 올린다.
+    const competitive = profile.competitive || {};
+    if ((competitive.wins || 0) + (competitive.losses || 0) > 0) {
+      await sdk.setDoc(sdk.doc(database, 'compLeaderboard', auth.currentUser.uid), {
+        nickname: profile.nickname,
+        tp: Math.min(999999, Math.max(0, Math.floor(Number(competitive.tp) || 0))),
+        wins: Math.min(99999, Math.max(0, Math.floor(Number(competitive.wins) || 0))),
+        losses: Math.min(99999, Math.max(0, Math.floor(Number(competitive.losses) || 0))),
+        deck: (competitive.lastDeck || []).filter(id => /^[a-z_]{1,24}$/.test(id)).slice(0, 3),
+        updatedAt: sdk.serverTimestamp()
+      }).catch(() => {}); // firestore.rules 를 아직 게시하지 않았으면 조용히 건너뛴다
+    }
+  }
+
+  async function compLeaderboard() {
+    if (!database) throw new Error('Firebase 연결 전에는 리더보드를 볼 수 없습니다.');
+    const results = await sdk.getDocs(sdk.query(sdk.collection(database, 'compLeaderboard'), sdk.orderBy('tp', 'desc'), sdk.limit(50)));
+    return results.docs.map(entry => ({ id: entry.id, ...entry.data() }));
   }
 
   async function leaderboard() {
@@ -3404,7 +3440,7 @@ window.JIHOO_FIREBASE_CONFIG = {
     return results.docs.map(entry => ({ id: entry.id, ...entry.data() }));
   }
 
-  window.JihooOnline = { init, code, createAccount, login, recoverAccount: login, changePassword, restoreCurrent, saveNow, queueSave, publish, leaderboard,
+  window.JihooOnline = { init, code, createAccount, login, recoverAccount: login, changePassword, restoreCurrent, saveNow, queueSave, publish, leaderboard, compLeaderboard,
     connected: () => !!(auth && auth.currentUser), enabled: () => !!auth && !backupWriteBlocked };
 })();
 
@@ -3421,7 +3457,7 @@ if (PREVIEW_MODE) {
   const noop = () => {}, resolved = () => Promise.resolve(null);
   window.JihooOnline = { init: resolved, code: () => null, createAccount: resolved, login: resolved, recoverAccount: resolved,
     changePassword: resolved, restoreCurrent: resolved, saveNow: resolved, queueSave: noop, publish: resolved,
-    leaderboard: () => Promise.resolve([]), connected: () => false, enabled: () => false };
+    leaderboard: () => Promise.resolve([]), compLeaderboard: () => Promise.resolve([]), connected: () => false, enabled: () => false };
 }
 
 const PORTRAITS = {
@@ -4546,7 +4582,7 @@ function freshProfile() {
     highestRewardedLevel: 1,
     pendingLevelCelebration: null,
     activeMatch: null,
-    competitive: { tp: 0, wins: 0, losses: 0, peak: 0 },
+    competitive: { tp: 0, wins: 0, losses: 0, peak: 0, lastDeck: [] },
     daily: { day: '', points: 0, chestClaimed: false, progress: {}, awarded: {}, allCounted: false, shop: null },
     inventory: { epicTicket: 0, legendTicket: 0 },
     newcomer: { unlocked: false, daysClaimed: 0, lastClaimDay: '', noticePending: false },
@@ -4625,7 +4661,8 @@ function normalizeProfile(raw) {
       : null,
     competitive: {
       tp: safeCount(raw.competitive?.tp), wins: safeCount(raw.competitive?.wins),
-      losses: safeCount(raw.competitive?.losses), peak: safeCount(raw.competitive?.peak)
+      losses: safeCount(raw.competitive?.losses), peak: safeCount(raw.competitive?.peak),
+      lastDeck: (Array.isArray(raw.competitive?.lastDeck) ? raw.competitive.lastDeck : []).filter(id => typeof id === 'string' && /^[a-z_]{1,24}$/.test(id)).slice(0, 3)
     },
     activeMatch: raw.activeMatch && typeof raw.activeMatch === 'object'
       ? { mode: String(raw.activeMatch.mode || 'ranked'), startedAt: Math.max(0, Number(raw.activeMatch.startedAt) || 0) } : null,
@@ -4959,10 +4996,12 @@ function leaderboardDeck(deck, player = {}) {
   return row;
 }
 
-async function openLeaderboard() {
+async function openLeaderboard(tab = 'level') {
   showScreen('leaderboard');
+  document.querySelectorAll('[data-lb]').forEach(button => button.classList.toggle('on', button.dataset.lb === tab));
   $('leaderboardMessage').textContent = '온라인 순위를 불러오는 중...';
   $('leaderboardList').replaceChildren();
+  if (tab === 'comp') return openCompLeaderboard();
   try {
     const players = await window.JihooOnline.leaderboard();
     if (state.screen !== 'leaderboard') return;
@@ -5003,6 +5042,42 @@ function formatLastSeen(value) {
   if (elapsed < 86400000) return `${Math.floor(elapsed / 3600000)}시간 전`;
   return `${Math.floor(elapsed / 86400000)}일 전`;
 }
+
+// 경쟁전 리더보드: TP 순
+async function openCompLeaderboard() {
+  try {
+    const players = await window.JihooOnline.compLeaderboard();
+    if (state.screen !== 'leaderboard' || !document.querySelector('[data-lb="comp"].on')) return;
+    $('leaderboardMessage').textContent = players.length ? '경쟁전 티어 점수 기준 상위 50명' : '아직 경쟁전 기록이 없습니다.';
+    players.forEach((player, index) => {
+      const entry = document.createElement('div');
+      entry.className = 'leaderboard-entry comp-entry';
+      const rank = document.createElement('span');
+      rank.className = 'leaderboard-rank';
+      rank.textContent = `${index + 1}위`;
+      const main = document.createElement('div');
+      main.className = 'leaderboard-main';
+      const name = document.createElement('b');
+      name.textContent = String(player.nickname || '플레이어');
+      const wins = Math.max(0, Number(player.wins) || 0), losses = Math.max(0, Number(player.losses) || 0);
+      const info = document.createElement('span');
+      info.className = 'leaderboard-record';
+      info.textContent = `${wins}승 ${losses}패${wins + losses ? ` · 승률 ${(wins / (wins + losses) * 100).toFixed(1)}%` : ''}`;
+      main.append(name, info);
+      const tier = document.createElement('span');
+      tier.className = 'leaderboard-level comp-tier';
+      const tp = Math.max(0, Number(player.tp) || 0);
+      tier.innerHTML = `${compTierBadge(tp)} <small>${formatNumber(tp)} TP</small>`;
+      entry.append(rank, main, tier, leaderboardDeck(player.deck, player));
+      $('leaderboardList').appendChild(entry);
+    });
+  } catch (error) {
+    $('leaderboardMessage').textContent = /permission/i.test(error.message || '')
+      ? '경쟁전 리더보드를 불러올 권한이 없습니다. firestore.rules 를 다시 게시해야 합니다.'
+      : (error.message || '리더보드를 불러오지 못했습니다.');
+  }
+}
+document.querySelectorAll('[data-lb]').forEach(button => button.addEventListener('click', () => openLeaderboard(button.dataset.lb)));
 
 function showLeaderboardDetail(player) {
   const body = $('leaderboardDetail');
@@ -5557,6 +5632,7 @@ function settleMatch(won, draw, surrendered = false) {
     else if (!draw) { tp = -compLossTp(before.index); profile.competitive.losses++; }
     profile.competitive.tp = Math.max(0, profile.competitive.tp + tp);
     profile.competitive.peak = Math.max(profile.competitive.peak, profile.competitive.tp);
+    profile.competitive.lastDeck = state.myDeckIds.filter(id => CHAR_DB[id]).slice(0, 3);
     const after = compTierInfo(profile.competitive.tp);
     state.lastSettlement = { competitive: true, surrendered, tp: after.tp - before.tp, before, after };
     comp = null;
@@ -5564,8 +5640,8 @@ function settleMatch(won, draw, surrendered = false) {
     window.JihooOnline.publish().catch(() => {});
     return state.lastSettlement;
   }
-  if (surrendered && state.mode !== 'ranked') profile.losses++;
-  if (state.mode !== 'ranked' && state.mode !== 'castle') {
+  if (surrendered && state.mode !== 'ranked' && state.mode !== 'draftbattle') profile.losses++;
+  if (state.mode !== 'ranked' && state.mode !== 'castle' && state.mode !== 'draftbattle') {
     state.lastSettlement = { practice: true, surrendered, xp: 0, diamonds: 0, gold: 0, levelBonus: 0, before: getLevelInfo(profile.totalXp), after: getLevelInfo(profile.totalXp) };
     saveProfile();
     window.JihooOnline.publish().catch(() => {});
@@ -5573,7 +5649,8 @@ function settleMatch(won, draw, surrendered = false) {
   }
   const before = getLevelInfo(profile.totalXp);
   let xp = 0, diamonds = 0, gold = 0;
-  const castleMode = state.mode === 'castle'; // 성뿌수기: 승리 시 경험치만 획득 (패배 페널티·재화·전적 없음)
+  // 드래프트전(과 예전 성뿌수기): 승리 시 경험치만 획득 (패배 페널티·재화·전적 없음)
+  const castleMode = state.mode === 'castle' || state.mode === 'draftbattle';
   if (!draw && won) {
     xp = 100 + Math.floor(Math.random() * 51);
     if (!castleMode) {
@@ -5901,7 +5978,8 @@ $('btnLobbyBoost').addEventListener('click', () => {
   renderAccountUI();
 });
 setInterval(() => { if (state.screen === 'lobby') { renderLobbyBoost(); renderLobbyBadges(); } }, 1000);
-$('btnStartComp').addEventListener('click', startCompetitive);
+$('btnStartDraftBattle').addEventListener('click', () => startDraftMode('draftbattle'));
+$('btnStartComp').addEventListener('click', () => startDraftMode('competitive'));
 $('btnStartGame').addEventListener('click', () => {
   const deck = currentDeck();
   if (deck.length !== 5) { state.draftSelected = deck; draftPendingEquip = null; renderDraftGrid(); $('draftGrid').scrollTop = 0; showScreen('draft'); return; }
@@ -6580,7 +6658,9 @@ $('scrimTap').addEventListener('click', () => { $('charTooltip').classList.remov
 $('cdpClose').addEventListener('click', () => { $('charDetailPanel').classList.remove('show'); $('scrimTap').classList.remove('show'); stopCombatPreview(detailPreviewCanvas); detailPreviewCanvas = null; });
 
 /* 게임 흐름 및 자유 배치 */
-/* ───────── 경쟁전 (3.6): 티어 · 드래프트 · 3판 2선승 ───────── */
+/* ───────── 드래프트전 · 경쟁전 (3.6): 밴 · 픽 · 3판 2선승 ─────────
+   상대는 comp.opponent (지금은 봇) 로 추상화했고, 양쪽 행동은 applyDraftAction 한 곳으로만 들어온다.
+   양쪽 화면이 같아야 하는 무작위는 comp.rng (공유 시드). 온라인 친선전을 붙일 때 이 세 곳만 바꾸면 된다. */
 
 // 누적 티어 점수. 7850 이후로는 900, 1000, 1100 … 씩 늘어난다.
 const COMP_TIER_NAMES = ['아이언',
@@ -6595,9 +6675,19 @@ const COMP_TIER_POINTS = (() => {
 const COMP_GRANDMASTER = COMP_TIER_NAMES.indexOf('그랜드마스터 III');
 const COMP_GROUPS = ['iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ace', 'master', 'grandmaster', 'challenger'];
 const COMP_BAN_COUNT = 3;
-const COMP_BAN_SECONDS = 30;
-const COMP_PICK_SECONDS = 15;
+const COMP_BAN_SECONDS = 15;  // 양쪽 모두 밴하면 남은 시간과 상관없이 바로 넘어간다
+const COMP_PICK_SECONDS = 15; // 드래프트전·경쟁전 공통, 상대 차례에도 흐른다
+const BOT_THINK_MS = [2000, 10000]; // 봇이 자기 차례에 고민하는 시간 (긴장감)
 const COMP_RARITIES = ['common', 'rare', 'epic', 'legend'];
+
+// 밴까지는 같고, 픽 방식과 인원이 다르다.
+// 드래프트전: 5:5, PHASE 1~5 (등급 3종 중 고르기, PHASE 5 블라인드), 경험치만.
+// 경쟁전: 3:3, 선→후→후→선→선→후 로 모든 지후 중 고르기, 배치 선택지 2개, 티어 점수.
+const DRAFT_MODES = {
+  draftbattle: { label: '드래프트전', size: 5, style: 'phases', maxUnits: 5, poolSize: 3, ranked: false },
+  competitive: { label: '경쟁전', size: 3, style: 'snake', maxUnits: 3, poolSize: 2, ranked: true }
+};
+const SNAKE_ORDER = ['first', 'second', 'second', 'first', 'first', 'second'];
 
 function compTierInfo(tp) {
   const points = Math.max(0, Math.floor(Number(tp) || 0));
@@ -6625,43 +6715,106 @@ function compLossTp(tierIndex) {
 let comp = null;
 function compPool() { return playableIds().filter(id => CHAR_DB[id].rarity !== 'hidden'); }
 function compTaken() { return new Set([...comp.bans.ally, ...comp.bans.enemy, ...comp.picks.ally, ...comp.picks.enemy]); }
+const otherSide = side => (side === 'ally' ? 'enemy' : 'ally');
 function compFirstPicker(phase) { // 홀수 페이즈는 선수, 짝수 페이즈는 후수가 먼저 고른다
-  const firstSide = comp.first;
-  return phase % 2 === 1 ? firstSide : (firstSide === 'ally' ? 'enemy' : 'ally');
+  return phase % 2 === 1 ? comp.first : otherSide(comp.first);
+}
+function botWeightedPick(pool, count) {
+  const weight = { legend: 4, epic: 3, rare: 1.5, common: 1 };
+  const bag = pool.slice(), out = [];
+  while (out.length < count && bag.length) {
+    const total = bag.reduce((sum, id) => sum + weight[CHAR_DB[id].rarity], 0);
+    let roll = Math.random() * total, index = 0;
+    for (; index < bag.length - 1; index++) { roll -= weight[CHAR_DB[bag[index]].rarity]; if (roll < 0) break; }
+    out.push(bag.splice(index, 1)[0]);
+  }
+  return out;
 }
 
-function startCompetitive() {
+// 공유 시드 RNG: 양쪽 화면이 같아야 하는 무작위(선후수, 페이즈 등급·후보)는 이것만 쓴다.
+// 봇의 선택이나 시간 초과 자동 픽처럼 한쪽만의 결정은 Math.random 을 써도 된다.
+function seededRng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function seededPick(list, count) {
+  const bag = list.slice(), out = [];
+  while (out.length < count && bag.length) out.push(bag.splice(Math.floor(comp.rng() * bag.length), 1)[0]);
+  return out;
+}
+
+// 상대: 흐름은 act(request) 만 부른다. 지금은 봇이 답하고,
+// 나중에 온라인 친선전에서는 같은 모양의 네트워크 상대로 바꾸면 된다.
+//   request: { type:'ban', count, pool } | { type:'pick', options }
+//   → Promise<{ type:'ban', ids } | { type:'pick', id }>
+function createBotOpponent() {
+  return {
+    kind: 'bot',
+    act(request) {
+      const delay = randomBetween(BOT_THINK_MS[0], BOT_THINK_MS[1]);
+      return new Promise(resolve => scheduleTask(() => resolve(request.type === 'ban'
+        ? { type: 'ban', ids: botWeightedPick(request.pool, request.count) }
+        : { type: 'pick', id: botWeightedPick(request.options, 1)[0] }), delay));
+    }
+  };
+}
+// 상대에게 행동을 요청한다. 그 사이 차례가 바뀌었으면(시간 초과·취소) 답을 버린다.
+function askOpponent(request) {
+  const turnKey = comp.turnKey;
+  comp.opponent.act(request).then(action => { if (comp && comp.turnKey === turnKey) applyDraftAction('enemy', action); });
+}
+// 양쪽 행동이 반영되는 유일한 입구. 온라인이 되면 내 행동은 여기서 상대에게도 보낸다.
+function applyDraftAction(side, action) {
+  if (!comp || !action) return;
+  if (action.type === 'ban') return submitBans(side, action.ids);
+  if (action.type === 'pick') return comp.cfg.style === 'snake' ? snakePick(side, action.id) : compPick(side, action.id);
+}
+
+function startDraftMode(modeKey) {
+  const cfg = DRAFT_MODES[modeKey];
   leaveBattle();
-  state.mode = 'competitive';
+  state.mode = modeKey;
   state.matchSettled = false;
   const me = compTierInfo(profile.competitive.tp);
+  const myLevel = getLevelInfo(profile.totalXp).level;
+  const seed = Math.floor(Math.random() * 4294967296);
   comp = {
-    stage: 'ban', token: 0, phase: 0,
-    first: Math.random() < 0.5 ? 'ally' : 'enemy',
+    mode: modeKey, cfg, seed, rng: seededRng(seed), opponent: createBotOpponent(),
+    stage: 'ban', token: 0, turnKey: 0, phase: 0, pickIndex: 0, selected: null,
+    first: null,
     bans: { ally: [], enemy: [] }, banDraft: [],
     picks: { ally: [], enemy: [] },
-    rarity: null, options: [], pickedBy: {}, turn: null, deadline: 0,
+    rarity: null, options: [], pickedBy: {}, turn: null, deadline: 0, blind: false,
     enemy: {
       name: BOT_NICKNAMES[Math.floor(Math.random() * BOT_NICKNAMES.length)],
-      level: Math.max(1, Math.min(100, getLevelInfo(profile.totalXp).level + randomBetween(-2, 2))),
+      level: Math.max(1, Math.min(100, myLevel + randomBetween(-2, 2))),
       tp: Math.max(0, me.tp + randomBetween(-250, 250))
     }
   };
-  // 드래프트부터 경기다. 여기서 창을 닫아도 패배로 처리한다.
+  comp.first = comp.rng() < 0.5 ? 'ally' : 'enemy'; // 동전 던지기 (공유 시드)
+  // 경쟁전은 드래프트부터 경기다. 여기서 창을 닫아도 패배로 처리한다.
   abandonNotice = '';
-  profile.activeMatch = { mode: 'competitive', startedAt: Date.now() };
-  saveProfile();
+  if (cfg.ranked) { profile.activeMatch = { mode: modeKey, startedAt: Date.now() }; saveProfile(); }
+  $('cdMode').textContent = `${cfg.label} · ${cfg.size}:${cfg.size}`;
   $('cdAllyName').textContent = profile.nickname || '나';
   $('cdEnemyName').textContent = comp.enemy.name;
-  $('cdAllyTier').innerHTML = compTierBadge(me.tp);
-  $('cdEnemyTier').innerHTML = compTierBadge(comp.enemy.tp);
+  $('cdAllyTier').innerHTML = cfg.ranked ? compTierBadge(me.tp) : `<span class="cd-level">Lv.${myLevel}</span>`;
+  $('cdEnemyTier').innerHTML = cfg.ranked ? compTierBadge(comp.enemy.tp) : `<span class="cd-level">Lv.${comp.enemy.level}</span>`;
   $('cdAllyOrder').textContent = comp.first === 'ally' ? '선수' : '후수';
   $('cdEnemyOrder').textContent = comp.first === 'enemy' ? '선수' : '후수';
   $('cdLog').textContent = `동전 던지기 결과 ${comp.first === 'ally' ? '내가 선수' : '상대가 선수'}입니다. 먼저 밴할 지후 ${COMP_BAN_COUNT}종을 고르세요.`;
   showScreen('compdraft');
   renderCompPicks();
   renderCompBan();
-  compSetTimer(COMP_BAN_SECONDS, confirmCompBan);
+  compSetTimer(COMP_BAN_SECONDS, banTimeUp);
+  comp.turnKey++;
+  askOpponent({ type: 'ban', count: COMP_BAN_COUNT, pool: compPool() });
 }
 
 // 한 단계 타이머. 단계가 바뀌면 이전 타이머는 자동으로 무시된다.
@@ -6691,18 +6844,23 @@ function bindCompInfo(root) {
     showCharDetail(CHAR_DB[el.dataset.info]);
   }));
 }
+// 등급별로 묶은 전체 지후 목록 (밴·스네이크 픽 공용)
+function compGridHtml(cardOpts) {
+  const pool = compPool();
+  return COMP_RARITIES.map(rarity => {
+    const ids = pool.filter(id => CHAR_DB[id].rarity === rarity).sort((a, b) => CHAR_DB[a].name.localeCompare(CHAR_DB[b].name));
+    return `<h4>${RARITY_LABEL[rarity]}</h4><div class="cd-ban-grid">${ids.map(id => compCardHtml(id, cardOpts(id))).join('')}</div>`;
+  }).join('');
+}
 
 function renderCompBan() {
   $('cdPhase').textContent = 'BAN';
   $('cdTurn').textContent = `밴할 지후 ${COMP_BAN_COUNT}종 선택 · 상대가 무엇을 밴했는지는 끝나야 공개됩니다`;
-  const pool = compPool();
-  const groups = COMP_RARITIES.map(rarity => {
-    const ids = pool.filter(id => CHAR_DB[id].rarity === rarity).sort((a, b) => CHAR_DB[a].name.localeCompare(CHAR_DB[b].name));
-    return `<h4>${RARITY_LABEL[rarity]}</h4><div class="cd-ban-grid">${ids.map(id => compCardHtml(id, { cls: 'mini' + (comp.banDraft.includes(id) ? ' banned-mine' : '') })).join('')}</div>`;
-  }).join('');
-  $('cdStage').innerHTML = `<div class="cd-ban">${groups}</div>
+  $('cdTurn').className = 'cd-turn mine';
+  $('cdStage').innerHTML = `<div class="cd-ban">${compGridHtml(id => ({ cls: 'mini' + (comp.banDraft.includes(id) ? ' banned-mine' : '') }))}</div>
     <div class="cd-ban-bar"><span>밴 ${comp.banDraft.length} / ${COMP_BAN_COUNT}</span><button type="button" class="btn btn-primary" id="cdBanConfirm" ${comp.banDraft.length === COMP_BAN_COUNT ? '' : 'disabled'}>밴 확정</button></div>`;
   $('cdStage').querySelectorAll('.cd-card').forEach(card => card.addEventListener('click', () => {
+    if (comp.bans.ally.length) return; // 이미 확정함
     const id = card.dataset.id;
     const at = comp.banDraft.indexOf(id);
     if (at >= 0) comp.banDraft.splice(at, 1);
@@ -6713,43 +6871,51 @@ function renderCompBan() {
   bindCompInfo($('cdStage'));
 }
 
-function botBanPicks(pool, count) {
-  const weight = { legend: 4, epic: 3, rare: 1.5, common: 1 };
-  const bag = pool.slice(), out = [];
-  while (out.length < count && bag.length) {
-    const total = bag.reduce((sum, id) => sum + weight[CHAR_DB[id].rarity], 0);
-    let roll = Math.random() * total, index = 0;
-    for (; index < bag.length - 1; index++) { roll -= weight[CHAR_DB[bag[index]].rarity]; if (roll < 0) break; }
-    out.push(bag.splice(index, 1)[0]);
-  }
-  return out;
-}
-
+// 내 밴 확정 (버튼 또는 시간 초과). 모자라면 무작위로 채운다.
 function confirmCompBan() {
-  if (!comp || comp.stage !== 'ban') return;
-  comp.token++;
+  if (!comp || comp.stage !== 'ban' || comp.bans.ally.length) return;
   const pool = compPool();
   while (comp.banDraft.length < COMP_BAN_COUNT) {
     const rest = pool.filter(id => !comp.banDraft.includes(id));
     comp.banDraft.push(rest[Math.floor(Math.random() * rest.length)]);
   }
-  comp.bans.ally = comp.banDraft.slice();
-  comp.bans.enemy = botBanPicks(pool, COMP_BAN_COUNT);
+  applyDraftAction('ally', { type: 'ban', ids: comp.banDraft.slice() });
+}
+// 밴 시간 종료: 아직 안 낸 쪽은 무작위로 채운다.
+function banTimeUp() {
+  if (!comp || comp.stage !== 'ban') return;
+  confirmCompBan();
+  if (comp.stage === 'ban' && !comp.bans.enemy.length) applyDraftAction('enemy', { type: 'ban', ids: botWeightedPick(compPool(), COMP_BAN_COUNT) });
+}
+function submitBans(side, ids) {
+  if (comp.stage !== 'ban' || comp.bans[side].length) return;
+  comp.bans[side] = ids.slice(0, COMP_BAN_COUNT);
+  if (side === 'ally') {
+    $('cdTurn').textContent = '상대의 밴을 기다리는 중…';
+    $('cdTurn').className = 'cd-turn';
+    $('cdBanConfirm').disabled = true;
+  }
+  if (comp.bans.ally.length && comp.bans.enemy.length) revealBans(); // 둘 다 내야 공개
+}
+function revealBans() {
+  comp.token++; // 밴 타이머 정지
   comp.stage = 'banReveal';
   $('cdTimer').textContent = '';
   $('cdPhase').textContent = 'BAN 공개';
   $('cdTurn').textContent = '밴 결과';
+  $('cdTurn').className = 'cd-turn';
   const dup = comp.bans.ally.filter(id => comp.bans.enemy.includes(id));
   $('cdStage').innerHTML = `<div class="cd-reveal">
     <div><h4>상대의 밴</h4><div class="cd-row">${comp.bans.enemy.map(id => compCardHtml(id, { cls: 'banned', disabled: true })).join('')}</div></div>
     <div><h4>나의 밴</h4><div class="cd-row">${comp.bans.ally.map(id => compCardHtml(id, { cls: 'banned', disabled: true })).join('')}</div></div>
   </div>`;
-  $('cdLog').textContent = dup.length ? `겹친 밴: ${dup.map(id => CHAR_DB[id].name).join(', ')}. 밴된 지후는 드래프트에 나오지 않습니다.` : '밴된 지후는 드래프트에 나오지 않습니다.';
+  $('cdLog').textContent = dup.length ? `겹친 밴: ${dup.map(id => CHAR_DB[id].name).join(', ')}. 밴된 지후는 나오지 않습니다.` : '밴된 지후는 나오지 않습니다.';
   bindCompInfo($('cdStage'));
   renderCompPicks();
-  scheduleTask(() => startCompPhase(1), 2800);
+  scheduleTask(() => (comp.cfg.style === 'snake' ? startSnakePick() : startCompPhase(1)), 2800);
 }
 
+/* 드래프트전: PHASE 1~5 */
 function startCompPhase(phase) {
   if (!comp) return;
   const taken = compTaken();
@@ -6757,18 +6923,17 @@ function startCompPhase(phase) {
   const rarities = COMP_RARITIES.filter(rarity => available.filter(id => CHAR_DB[id].rarity === rarity).length >= 3);
   comp.phase = phase;
   comp.stage = 'pick';
-  comp.rarity = rarities.length ? rarities[Math.floor(Math.random() * rarities.length)] : null;
+  comp.rarity = rarities.length ? rarities[Math.floor(comp.rng() * rarities.length)] : null;
   const candidates = comp.rarity ? available.filter(id => CHAR_DB[id].rarity === comp.rarity) : available;
-  comp.options = pickRandom(candidates, 3);
+  comp.options = seededPick(candidates, 3);
   comp.pickedBy = {};
   comp.order = [compFirstPicker(phase)];
-  comp.order.push(comp.order[0] === 'ally' ? 'enemy' : 'ally');
+  comp.order.push(otherSide(comp.order[0]));
   comp.blind = phase === 5; // PHASE 5 는 등급만 공개된다
   $('cdPhase').textContent = `PHASE ${phase}`;
   $('cdLog').textContent = `PHASE ${phase} · ${comp.rarity ? RARITY_LABEL[comp.rarity] : '무작위'} 지후 3종${comp.blind ? ' (무엇인지 보이지 않습니다)' : ''}`;
   nextCompTurn();
 }
-
 function nextCompTurn() {
   const side = comp.order.find(s => !Object.values(comp.pickedBy).includes(s));
   if (!side) {
@@ -6778,13 +6943,12 @@ function nextCompTurn() {
     return;
   }
   comp.turn = side;
+  comp.turnKey++;
   renderCompPhase();
-  if (side === 'ally') compSetTimer(COMP_PICK_SECONDS, () => compPick('ally', randomRemaining()));
+  if (side === 'ally') compSetTimer(COMP_PICK_SECONDS, () => applyDraftAction('ally', { type: 'pick', id: randomRemaining() }));
   else {
-    comp.token++;
-    $('cdTimer').textContent = '';
-    const token = comp.token;
-    scheduleTask(() => { if (comp && comp.token === token) compPick('enemy', randomRemaining()); }, randomBetween(1100, 2300));
+    compSetTimer(COMP_PICK_SECONDS, () => applyDraftAction('enemy', { type: 'pick', id: randomRemaining() }));
+    askOpponent({ type: 'pick', options: comp.options.filter(id => !comp.pickedBy[id]) });
   }
 }
 function randomRemaining() {
@@ -6801,7 +6965,6 @@ function compPick(side, id) {
   renderCompPicks();
   nextCompTurn();
 }
-
 function renderCompPhase() {
   const done = comp.stage === 'phaseEnd';
   const mine = comp.turn === 'ally' && !done;
@@ -6818,12 +6981,83 @@ function renderCompPhase() {
     return compCardHtml(id, { cls: owner ? 'taken ' + owner : '', disabled: !mine || !!owner, tag });
   }).join('');
   $('cdStage').innerHTML = `<div class="cd-phase-rarity rarity-${comp.rarity || 'common'}">${comp.rarity ? RARITY_LABEL[comp.rarity] : ''}${comp.blind ? ' · 블라인드' : ''}</div><div class="cd-options">${cards}</div>`;
-  $('cdStage').querySelectorAll('.cd-card').forEach(card => card.addEventListener('click', () => compPick('ally', card.dataset.id)));
+  $('cdStage').querySelectorAll('.cd-card').forEach(card => card.addEventListener('click', () => applyDraftAction('ally', { type: 'pick', id: card.dataset.id })));
+  bindCompInfo($('cdStage'));
+}
+
+/* 경쟁전: 선→후→후→선→선→후 스네이크 픽, 모든 지후 중에서 */
+const snakeSide = index => (SNAKE_ORDER[index] === 'first' ? comp.first : otherSide(comp.first));
+function snakeAvailable() {
+  const taken = compTaken();
+  return compPool().filter(id => !taken.has(id));
+}
+function startSnakePick() {
+  if (!comp) return;
+  comp.stage = 'snake';
+  comp.pickIndex = 0;
+  nextSnakeTurn();
+}
+function nextSnakeTurn() {
+  if (comp.pickIndex >= SNAKE_ORDER.length) { finishCompDraft(); return; }
+  const side = snakeSide(comp.pickIndex);
+  comp.turn = side;
+  comp.turnKey++;
+  comp.selected = null;
+  renderSnake();
+  if (side === 'ally') {
+    compSetTimer(COMP_PICK_SECONDS, () => {
+      const rest = snakeAvailable();
+      applyDraftAction('ally', { type: 'pick', id: comp.selected && rest.includes(comp.selected) ? comp.selected : rest[Math.floor(Math.random() * rest.length)] });
+    });
+  } else {
+    compSetTimer(COMP_PICK_SECONDS, () => {
+      const rest = snakeAvailable();
+      applyDraftAction('enemy', { type: 'pick', id: rest[Math.floor(Math.random() * rest.length)] });
+    });
+    askOpponent({ type: 'pick', options: snakeAvailable() });
+  }
+}
+function snakePick(side, id) {
+  if (!comp || comp.stage !== 'snake' || comp.turn !== side || !id || !snakeAvailable().includes(id)) return;
+  comp.token++;
+  comp.picks[side].push(id);
+  comp.pickIndex++;
+  $('cdLog').textContent = side === 'ally' ? `${CHAR_DB[id].name}을(를) 골랐습니다.` : `상대가 ${CHAR_DB[id].name}을(를) 골랐습니다.`;
+  renderCompPicks();
+  comp.turn = null;
+  renderSnake(); // 다음 차례까지 잠깐 판을 잠근다
+  scheduleTask(nextSnakeTurn, 500);
+}
+function renderSnake() {
+  const mine = comp.turn === 'ally';
+  let count = 0; // 이어서 내가 고르는 횟수 (후→후, 선→선)
+  for (let i = comp.pickIndex; mine && i < SNAKE_ORDER.length && snakeSide(i) === 'ally'; i++) count++;
+  $('cdPhase').textContent = `PICK ${Math.min(comp.pickIndex + 1, SNAKE_ORDER.length)}/${SNAKE_ORDER.length}`;
+  $('cdTurn').textContent = mine ? `내 차례 · 지후를 고르고 픽 확정${count > 1 ? ` (연속 ${count}픽)` : ''}` : comp.turn === 'enemy' ? '상대가 고르는 중…' : '다음 차례 준비…';
+  $('cdTurn').className = 'cd-turn' + (mine ? ' mine' : '');
+  const owner = id => (comp.picks.ally.includes(id) ? 'ally' : comp.picks.enemy.includes(id) ? 'enemy' : null);
+  const banned = id => comp.bans.ally.includes(id) || comp.bans.enemy.includes(id);
+  const order = SNAKE_ORDER.map((who, i) => `<span class="${i < comp.pickIndex ? 'done' : i === comp.pickIndex ? 'now' : ''} ${snakeSide(i)}">${who === 'first' ? '선' : '후'}</span>`).join('');
+  $('cdStage').innerHTML = `<div class="cd-snake-order">${order}</div>
+    <div class="cd-ban">${compGridHtml(id => {
+      const who = owner(id);
+      if (banned(id)) return { cls: 'mini banned', disabled: true };
+      if (who) return { cls: 'mini taken ' + who, disabled: true, tag: who === 'ally' ? '내 픽' : '상대 픽' };
+      return { cls: 'mini' + (comp.selected === id ? ' selected' : ''), disabled: !mine };
+    })}</div>
+    <div class="cd-ban-bar"><span>${comp.selected ? CHAR_DB[comp.selected].name : '지후를 선택하세요'}</span><button type="button" class="btn btn-primary" id="cdPickConfirm" ${mine && comp.selected ? '' : 'disabled'}>픽 확정</button></div>`;
+  $('cdStage').querySelectorAll('.cd-card:not(:disabled)').forEach(card => card.addEventListener('click', () => {
+    comp.selected = card.dataset.id;
+    const scroll = $('cdStage').scrollTop;
+    renderSnake();
+    $('cdStage').scrollTop = scroll;
+  }));
+  $('cdPickConfirm').addEventListener('click', () => applyDraftAction('ally', { type: 'pick', id: comp.selected }));
   bindCompInfo($('cdStage'));
 }
 
 function renderCompPicks() {
-  const row = side => Array.from({ length: 5 }, (_, i) => {
+  const row = side => Array.from({ length: comp.cfg.size }, (_, i) => {
     const id = comp.picks[side][i];
     if (!id) return '<div class="cd-slot empty"></div>';
     const c = CHAR_DB[id];
@@ -6832,6 +7066,8 @@ function renderCompPicks() {
     return hidden ? `<div class="cd-slot rarity-${c.rarity}"><span class="cd-back">?</span></div>`
       : `<div class="cd-slot rarity-${c.rarity}"><img src="${c.portrait}" alt="${c.name}"><small>${c.name}</small></div>`;
   }).join('');
+  $('cdAllyPicks').style.setProperty('--slots', comp.cfg.size);
+  $('cdEnemyPicks').style.setProperty('--slots', comp.cfg.size);
   $('cdAllyPicks').innerHTML = row('ally');
   $('cdEnemyPicks').innerHTML = row('enemy');
 }
@@ -6841,45 +7077,48 @@ function finishCompDraft() {
   comp.blind = false;
   renderCompPicks();
   $('cdPhase').textContent = 'READY';
-  $('cdTurn').textContent = '드래프트 완료 · 3판 2선승';
+  $('cdTimer').textContent = '';
+  $('cdTurn').textContent = `드래프트 완료 · ${comp.cfg.size}:${comp.cfg.size} · 3판 2선승`;
+  $('cdTurn').className = 'cd-turn';
   $('cdStage').innerHTML = `<div class="cd-ready"><b id="cdReadyCount">5</b><span>초 뒤 전투 시작</span></div>`;
   let left = 5;
   const tick = () => {
     if (!comp) return;
     left--;
-    if (left <= 0) { startCompetitiveMatch(); return; }
+    if (left <= 0) { startDraftMatch(); return; }
     $('cdReadyCount').textContent = left;
     scheduleTask(tick, 1000);
   };
   scheduleTask(tick, 1000);
 }
 
-function startCompetitiveMatch() {
-  state.mode = 'competitive';
+function startDraftMatch() {
+  const cfg = comp.cfg;
+  state.mode = comp.mode;
   state.matchStartedAt = Date.now();
   state.allyOnceUsed = new Set();
   state.round = 1; state.allyLives = 2; state.enemyLives = 2; state.placements = [];
   state.reaperGrudges = {};
   state.castles = null;
-  state.maxUnits = 5;
+  state.maxUnits = cfg.maxUnits;
+  state.poolSize = cfg.poolSize;
   state.myDeckIds = comp.picks.ally.slice();
   state.enemyDeckIds = comp.picks.enemy.slice();
   state.enemyHiddenId = null; state.enemyHiddenUsed = false;
   state.enemyName = comp.enemy.name;
   state.enemyLevel = comp.enemy.level;
-  state.compEnemyTp = comp.enemy.tp;
   state.matchSettled = false;
   state.lastSettlement = null;
   resetBattlePresentation();
   const badge = $('roundBadge');
-  if (badge) badge.innerHTML = '경쟁전 · ROUND <span id="roundNum">1</span>';
+  if (badge) badge.innerHTML = `${cfg.label} · ROUND <span id="roundNum">1</span>`;
   updateLifeUI();
   showScreen('battle');
   startRound();
 }
 
 // 무승부: 이번 라운드 유닛의 위치를 각 진영 안에서 무작위로 섞고 같은 라운드를 다시 싸운다.
-function replayCompetitiveRound() {
+function replayDraftRound() {
   const ew = isEastWestLayout();
   const pad = 90;
   const snapshot = (state.compRoundPlacements || state.placements).map(p => ({ ...p }));
@@ -6914,13 +7153,14 @@ function replayCompetitiveRound() {
 function renderCompTile() {
   const info = compTierInfo(profile.competitive.tp);
   const desc = $('compTileDesc');
-  if (desc) desc.innerHTML = `${compTierBadge(info.tp, 'small')} ${formatNumber(info.tp)} TP · 드래프트 3판 2선승`;
+  if (desc) desc.innerHTML = `${compTierBadge(info.tp, 'small')} ${formatNumber(info.tp)} TP · 3:3 밴픽 · 3판 2선승`;
 }
 
 function startMatch(mode = 'ranked') {
   if (mode === 'castle') return; // 3.6: 성뿌수기 모드는 삭제되었다.
   leaveBattle();
   state.maxUnits = 10;
+  state.poolSize = 3;
   withLoading(mode === 'castle' ? '성뿌수기 준비중' : '랭크전 준비중', () => {
     state.mode = mode;
     state.matchStartedAt = Date.now();
@@ -6950,12 +7190,12 @@ function updateLifeUI() {
     const el = $('enemyLife' + i);
     if (el) {
       el.classList.toggle('on', i < state.enemyLives);
-      el.style.display = (state.mode === 'castle' || (state.mode === 'arena' && i > 0) || (state.mode === 'competitive' && i > 1)) ? 'none' : '';
+      el.style.display = (state.mode === 'castle' || (state.mode === 'arena' && i > 0) || (DRAFT_MODES[state.mode] && i > 1)) ? 'none' : '';
     }
   }
   document.querySelectorAll('#allyLivesDisplay .life-pip').forEach((p, i) => {
     p.classList.toggle('on', i < state.allyLives);
-    p.style.display = (state.mode === 'castle' || (state.mode === 'arena' && i > 0) || (state.mode === 'competitive' && i > 1)) ? 'none' : '';
+    p.style.display = (state.mode === 'castle' || (state.mode === 'arena' && i > 0) || (DRAFT_MODES[state.mode] && i > 1)) ? 'none' : '';
   });
 }
 
@@ -7095,8 +7335,8 @@ function nextDeployCycle() {
   const allyCount = countedAlive('ally');
   $('bottomStatusLine').innerHTML = `배치 <b>${state.deployRounds}</b>/3 · 유닛 <b>${allyCount}</b>/${state.maxUnits}`;
 
-  const source = state.allyBench.length ? state.allyBench : (state.mode === 'competitive' ? state.myDeckIds : playableIds());
-  state.pool = pickRandom(source, Math.min(3, source.length));
+  const source = state.allyBench.length ? state.allyBench : (DRAFT_MODES[state.mode] ? state.myDeckIds : playableIds());
+  state.pool = pickRandom(source, Math.min(state.poolSize || 3, source.length)); // 경쟁전은 선택지 2개
   renderPool();
   openPoolSheet(true);
   startPhaseTimer(15, autoPlacePool);
@@ -9146,7 +9386,7 @@ function beginCombatPhase() {
 
   state.physAcc = 0;
   state.realms = [];
-  if (state.mode === 'competitive') state.compRoundPlacements = state.placements.map(p => ({ ...p }));
+  if (DRAFT_MODES[state.mode]) state.compRoundPlacements = state.placements.map(p => ({ ...p }));
   checkTaegukHarmony('ally');
   checkTaegukHarmony('enemy');
   state.units.forEach(u => {
@@ -12009,14 +12249,14 @@ function endRoundCombat(winnerSide, timedOut = false) {
     return;
   }
 
-  if (state.mode === 'competitive' && winnerSide === 'draw') {
+  if (DRAFT_MODES[state.mode] && winnerSide === 'draw') {
     const overlay = $('roundOverlay');
     $('resultTitle').textContent = 'DRAW';
     $('resultTitle').className = 'result-title';
     $('resultSub').textContent = '무승부 · 유닛 위치를 섞어 이번 라운드를 다시 싸웁니다';
     $('lifeTransition').innerHTML = '';
     overlay.classList.add('show');
-    scheduleTask(() => { overlay.classList.remove('show'); replayCompetitiveRound(); }, 1800);
+    scheduleTask(() => { overlay.classList.remove('show'); replayDraftRound(); }, 1800);
     return;
   }
 
@@ -12119,8 +12359,8 @@ function finishMatch(winnerSide, surrendered = false) {
   } else {
     $('endTitle').textContent = won ? 'VICTORY' : 'DEFEAT';
     $('endTitle').className = 'end-title title-font ' + (won ? 'win' : 'lose');
-    $('endSub').textContent = surrendered ? '항복했습니다. 패배로 기록됩니다.' : state.mode === 'competitive'
-      ? (won ? '경쟁전 3판 2선승 승리' : '경쟁전 3판 2선승 패배')
+    $('endSub').textContent = surrendered ? '항복했습니다. 패배로 기록됩니다.' : DRAFT_MODES[state.mode]
+      ? `${DRAFT_MODES[state.mode].label} 3판 2선승 ${won ? '승리' : '패배'}`
       : state.mode === 'castle'
       ? (won ? '적 성을 먼저 파괴했습니다' : '아군 성이 파괴되었습니다')
       : state.mode === 'arena'
@@ -12152,7 +12392,7 @@ function finishMatch(winnerSide, surrendered = false) {
       ${settlement.levelBonus ? `<div class="settlement-row"><span>레벨업 보너스</span><b class="gain">+${formatNumber(settlement.levelBonus)} ◆</b></div>` : ''}
       <div class="settlement-row"><span>프로필</span><b>Lv.${settlement.after.level}${levelUp ? ' LEVEL UP!' : ''}</b></div>
       <div class="profile-xp-track"><div class="profile-xp-fill" style="width:${settlement.after.required ? settlement.after.current / settlement.after.required * 100 : 100}%"></div></div>
-      <div class="settlement-note">${surrendered ? '항복은 패배로 기록되며 출석부 해금과 일일 플레이 횟수에는 포함되지 않습니다.' : state.mode === 'castle' ? '성뿌수기: 승리 시 EXP +100~150 · 패배 시 변동 없음' : '승리: EXP +100~150, 다이아 +100~200, 골드 +1,000~2,000 · 패배: EXP -30~50'}</div>`;
+      <div class="settlement-note">${surrendered ? '항복은 패배로 기록되며 출석부 해금과 일일 플레이 횟수에는 포함되지 않습니다.' : state.mode === 'draftbattle' ? '드래프트전: 승리 시 EXP +100~150 · 패배 시 변동 없음 · 재화와 전적은 기록되지 않습니다' : state.mode === 'castle' ? '성뿌수기: 승리 시 EXP +100~150 · 패배 시 변동 없음' : '승리: EXP +100~150, 다이아 +100~200, 골드 +1,000~2,000 · 패배: EXP -30~50'}</div>`;
   }
   card.insertAdjacentHTML('afterbegin', '<div class="settlement-heading"><span>전투 보상</span><b id="settlementProgressLabel">정산 중 · 0%</b></div><div class="settlement-progress"><span id="settlementProgressFill"></span></div>');
   const steps = Array.from(card.children).filter(el => !el.classList.contains('settlement-heading') && !el.classList.contains('settlement-progress'));
@@ -12174,21 +12414,23 @@ $('btnArenaAgain').addEventListener('click', () => { leaveBattle(); showScreen('
 /* ===== 패치 노트 ===== */
 const PATCH_NOTES = {
   '3.6': {
-    label: 'v3.6 경쟁전 · 티어 시스템',
+    label: 'v3.6 경쟁전 · 드래프트전 · 티어',
     date: '2026.09.26',
     sections: [
       { title: '경쟁전', items: [
-        { emoji:'🏆', name:'경쟁전', tag:'new', color:'#c99a17', desc:'로비 05번 칸에 경쟁전을 추가했습니다. 드래프트로 덱을 꾸려 <b>3판 2선승</b>으로 싸웁니다. 배치할 수 있는 유닛은 최대 <b>5기</b>입니다.' },
-        { emoji:'🚫', name:'밴', tag:'new', color:'#e03131', desc:'시작 전에 일반~전설 지후 중 <b>3종</b>을 밴합니다. 상대가 무엇을 밴했는지는 끝나야 공개되고, 겹칠 수도 있습니다. 밴된 지후는 나오지 않습니다.' },
-        { emoji:'🃏', name:'드래프트', tag:'new', color:'#3f78e0', desc:'동전 던지기로 선수·후수를 정합니다. PHASE 1~5마다 무작위 등급의 지후 3종이 공개되고, 먼저 고르는 쪽이 번갈아 바뀝니다 (PHASE 1은 선수). <b>PHASE 5</b>는 등급만 보이는 블라인드 픽입니다. 보유하지 않은 지후도 쓸 수 있습니다.' },
+        { emoji:'🏆', name:'경쟁전 (3:3)', tag:'new', color:'#c99a17', desc:'로비 06번 칸. 밴 후 <b>모든 지후</b> 중에서 선→후→후→선→선→후 순서로 3기씩 골라 <b>3판 2선승</b>으로 싸웁니다. 배치할 때 선택지는 <b>2개</b>, 최대 3기입니다. 경험치 대신 티어 점수가 오릅니다.' },
+        { emoji:'🎖', name:'티어', tag:'new', color:'#8d2fb0', desc:'<b>아이언 0 TP</b>에서 시작해 브론즈·실버·골드·플래티넘·다이아·에이스·마스터·그랜드마스터(각 III~I)를 거쳐 <b>챌린저</b>까지 26단계입니다.' },
+        { emoji:'📈', name:'TP 증감', tag:'new', color:'#2f9e44', desc:'승리 <b>+80~120 TP</b>. 패배 시 아이언 0~5 TP에서 그랜드마스터 80~100 TP까지 티어가 높을수록 더 많이 잃습니다.' },
+        { emoji:'🥇', name:'경쟁전 리더보드', tag:'new', color:'#d9bd67', desc:'리더보드에 <b>경쟁전</b> 탭을 추가했습니다. 티어 점수 순 상위 50명과 마지막 3:3 덱을 보여줍니다.' },
+        { emoji:'🚪', name:'이탈', tag:'system', color:'#888', desc:'경쟁전 드래프트나 경기 도중 창을 닫으면 다음 접속 때 패배로 처리합니다.' }
+      ] },
+      { title: '드래프트전', items: [
+        { emoji:'🃏', name:'드래프트전 (5:5)', tag:'new', color:'#3f78e0', desc:'로비 05번 칸. 밴 후 PHASE 1~5마다 무작위 등급의 지후 3종 중 번갈아 고릅니다. <b>PHASE 5</b>는 등급만 보이는 블라인드 픽입니다. 승리 시 경험치만 얻고 패배해도 잃지 않습니다.' }
+      ] },
+      { title: '밴픽 공통', items: [
+        { emoji:'🚫', name:'밴', tag:'new', color:'#e03131', desc:'시작 전에 일반~전설 지후 중 <b>3종</b>을 밴합니다. 상대의 밴은 끝나야 공개되고 겹칠 수 있습니다. 밴 시간 <b>15초</b>, 양쪽 모두 밴하면 바로 넘어갑니다.' },
+        { emoji:'⏱', name:'픽 시간', tag:'new', color:'#888', desc:'한 번 고르는 데 <b>15초</b>입니다. 동전 던지기로 선수·후수를 정하고, 드래프트로 받은 지후는 보유하지 않았어도 쓸 수 있습니다.' },
         { emoji:'🔀', name:'무승부 재경기', tag:'new', color:'#888', desc:'라운드가 무승부면 유닛 위치를 각 진영 안에서 섞어 같은 라운드를 다시 싸웁니다.' },
-        { emoji:'🚪', name:'이탈', tag:'system', color:'#888', desc:'드래프트나 경기 도중 창을 닫으면 다음 접속 때 패배로 처리합니다.' }
-      ] },
-      { title: '티어', items: [
-        { emoji:'🎖', name:'티어 점수 (TP)', tag:'new', color:'#8d2fb0', desc:'경쟁전은 경험치 대신 TP가 오릅니다. <b>아이언 0 TP</b>에서 시작해 브론즈·실버·골드·플래티넘·다이아·에이스·마스터·그랜드마스터(각 III~I)를 거쳐 <b>챌린저</b>까지 26단계입니다.' },
-        { emoji:'📈', name:'TP 증감', tag:'new', color:'#2f9e44', desc:'승리 <b>+80~120 TP</b>. 패배 시 아이언 0~5 TP에서 그랜드마스터 80~100 TP까지 티어가 높을수록 더 많이 잃습니다.' }
-      ] },
-      { title: '모드', items: [
         { emoji:'🏰', name:'성뿌수기', tag:'system', color:'#888', desc:'성뿌수기 모드를 삭제했습니다.' }
       ] }
     ]
@@ -13166,7 +13408,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showLevelCelebration();
   });
   $('btnWelcomeRecover').addEventListener('click', () => openModal('restoreModal'));
-  $('btnOpenLeaderboard').addEventListener('click', openLeaderboard);
+  $('btnOpenLeaderboard').addEventListener('click', () => openLeaderboard('level'));
   $('btnLeaderboardBack').addEventListener('click', () => showScreen('lobby'));
   ensureDailyState();
   applyMapLayout();
