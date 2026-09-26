@@ -2035,6 +2035,17 @@ html[data-theme="light"] .leaderboard-detail-hero span { color:#6b5018; }
 @keyframes realm-vanish { from { width:20px; height:20px; opacity:1; } to { width:150px; height:150px; opacity:0; } }
 .calling-card { position:absolute; left:50%; top:-20px; transform:translateX(-50%); padding:1px 6px; border-radius:6px; background:#fff; color:#1b2f6b; border:1.5px solid #1b2f6b; font-size:11px; font-weight:900; white-space:nowrap; z-index:8; pointer-events:none; box-shadow:0 0 6px rgba(27,47,107,.6); }
 .hack-typing { position:absolute; left:50%; bottom:calc(100% + 6px); transform:translateX(-50%); padding:2px 7px; border-radius:4px; background:#0b0f0b; color:#39ff88; font:700 11px/1.4 ui-monospace,Consolas,monospace; white-space:nowrap; z-index:9; pointer-events:none; box-shadow:0 0 8px rgba(57,255,136,.5); }
+.glitch-overlay { position:absolute; inset:0; border-radius:50%; overflow:hidden; pointer-events:none; z-index:6; background:repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 2px, transparent 2px 4px); mix-blend-mode:screen; }
+.glitch-overlay i { position:absolute; left:-10%; width:120%; height:14%; opacity:.85; animation:glitch-slice .38s steps(3) infinite; }
+.glitch-overlay i:nth-child(1) { top:18%; background:rgba(57,255,136,.75); animation-delay:-.1s; }
+.glitch-overlay i:nth-child(2) { top:52%; background:rgba(255,43,214,.7); animation-delay:-.2s; }
+.glitch-overlay i:nth-child(3) { top:78%; background:rgba(25,199,255,.7); }
+@keyframes glitch-slice { 0% { transform:translateX(-18%); opacity:.9; } 33% { transform:translateX(14%); opacity:.2; } 66% { transform:translateX(-6%); opacity:.8; } 100% { transform:translateX(22%); opacity:0; } }
+.unit.hacked .unit-icon { animation:glitch-jitter .18s steps(2) infinite; }
+@keyframes glitch-jitter { 0% { transform:translate(0,0); } 25% { transform:translate(-3px,1px); } 50% { transform:translate(2px,-1px); } 75% { transform:translate(-1px,2px); } 100% { transform:translate(3px,0); } }
+.fx-glitch-burst { position:absolute; width:120px; height:90px; transform:translate(-50%,-50%); pointer-events:none; z-index:10; animation:glitch-burst .45s steps(4) forwards; }
+.fx-glitch-burst i { position:absolute; height:6px; box-shadow:0 0 6px currentColor; mix-blend-mode:screen; }
+@keyframes glitch-burst { 0% { opacity:1; transform:translate(-50%,-50%) skewX(0); } 50% { opacity:.8; transform:translate(-46%,-50%) skewX(-20deg); } 100% { opacity:0; transform:translate(-54%,-50%) skewX(15deg); } }
 .unit.hacked { animation:hacked-glitch .25s steps(2) infinite; box-shadow:0 0 0 3px rgba(57,255,136,.8), 0 0 14px rgba(25,199,192,.9); }
 @keyframes hacked-glitch { 0% { filter:hue-rotate(0) saturate(2); } 50% { filter:hue-rotate(120deg) saturate(3) drop-shadow(2px 0 0 #ff2bd6); } 100% { filter:hue-rotate(240deg) saturate(2) drop-shadow(-2px 0 0 #39ff88); } }
 .rr-mag { position:absolute; left:50%; top:-16px; transform:translateX(-50%); display:flex; gap:2px; padding:2px 3px; border-radius:6px; background:rgba(0,0,0,.6); z-index:8; pointer-events:none; }
@@ -2582,10 +2593,10 @@ const CHARACTER_BALANCE = {
     gambleDelay: 1
   },
   mushroom: {
-    hp: 4000, atk: 360, atkSpeed: 1.5, range: 72, speed: 90,
+    hp: 3000, atk: 360, atkSpeed: 1.5, range: 72, speed: 90,
     isMelee: true,
-    shroomInterval: 5, shroomHpGain: 0.25, shroomHealTime: 4,
-    shroomPoisonChance: 0.3, shroomPoisonFraction: 0.2, shroomPoisonTicks: 4
+    shroomInterval: 5, shroomHpGain: 0.5, shroomAtkGain: 100, shroomHealTime: 4,
+    shroomPoisonChance: 0.3, shroomPoisonFraction: 0.75, shroomPoisonTicks: 5
   },
   phantom: {
     hp: 1800, atk: 90, atkSpeed: 1, range: 135, speed: 108,
@@ -3411,7 +3422,7 @@ const CHAR_DB = {
     id: 'mushroom', name: '버섯 지후', emoji: '🍄', role: 'tank', roleLabel: '탱커',
     rarity: 'epic', color: '#9b1fe8', portrait: PORTRAITS.mushroom,
     ...CHARACTER_BALANCE.mushroom,
-    skillDesc: '<b>5초마다</b> 버섯을 먹는다. 최대 체력이 <b>25%</b> 늘고 늘어난 만큼 4초에 걸쳐 회복한다. 단 <b>30%</b> 확률로 독버섯을 먹어 4초 동안 1초마다 최대 체력의 5%씩, 모두 <b>20%</b> 피해를 입는다.'
+    skillDesc: '<b>5초마다</b> 버섯을 먹는다. 최대 체력이 즉시 <b>50%</b> 늘고 늘어난 만큼 4초에 걸쳐 회복하며, 공격력이 <b>100</b> 오른다. 단 <b>30%</b> 확률로 독버섯을 먹어 5초 동안 1초마다 최대 체력의 15%씩, 모두 <b>75%</b> 피해를 입는다 (공격력은 줄지 않는다).'
   },
   phantom: {
     id: 'phantom', name: '괴도 지후', emoji: '🎩', role: 'support', roleLabel: '서포터',
@@ -6373,7 +6384,7 @@ function startRound() {
       if (u.ringEl) u.ringEl.remove();
     });
     state.units = state.units.filter(u => u.alive);
-    document.querySelectorAll('.fx-pulse, .fx-dagger, .fx-projectile, .fx-syringe-shot, .fx-burst, .fx-death-fx, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam').forEach(el => el.remove());
+    document.querySelectorAll('.fx-pulse, .fx-dagger, .fx-projectile, .fx-syringe-shot, .fx-glitch-burst, .fx-burst, .fx-death-fx, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam').forEach(el => el.remove());
     state.mines = [];
   } else {
     state.units = [];
@@ -6455,7 +6466,7 @@ function emitCastleWave(castle) {
 }
 
 function clearArenaUnits() {
-  document.querySelectorAll('.unit, .fx-pulse, .fx-dagger, .fx-projectile, .fx-syringe-shot, .fx-burst, .fx-death-fx, .lone-radius-ring, .unit-range-ring, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam, .fx-orbit-satellite, .fx-dust-zone').forEach(el => el.remove()); if (state) state.mines = [];
+  document.querySelectorAll('.unit, .fx-pulse, .fx-dagger, .fx-projectile, .fx-syringe-shot, .fx-glitch-burst, .fx-burst, .fx-death-fx, .lone-radius-ring, .unit-range-ring, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam, .fx-orbit-satellite, .fx-dust-zone').forEach(el => el.remove()); if (state) state.mines = [];
 }
 
 function completeDeployAction(delay = 700) {
@@ -7496,6 +7507,7 @@ function resetTransientSkillState(u) {
   if (u._callingCard) { u._callingCard.el.remove(); u._callingCard = null; }
   if (u._hackTyping) { u._hackTyping.el.remove(); u._hackTyping = null; }
   u._hacked = 0; u._sixSeven = null; u._gamble = null;
+  u.el.querySelector('.glitch-overlay')?.remove();
   u.invincible = 0; u.stealth = 0;
   u.physLock = 0; u.vx = 0; u.vy = 0; u.desVx = 0; u.desVy = 0;
   u._engaged = false;
@@ -10491,7 +10503,7 @@ function tickNewJihooSkills(u, dt) {
   if (u.charId === 'hacker') tickHacker(u, dt);
   if (u._hacked > 0) {
     u._hacked = Math.max(0, u._hacked - dt);
-    if (u._hacked <= 0) u.el.classList.remove('hacked');
+    if (u._hacked <= 0) { u.el.classList.remove('hacked'); u.el.querySelector('.glitch-overlay')?.remove(); }
   }
 }
 function tickMushroom(u, dt) {
@@ -10503,10 +10515,12 @@ function tickMushroom(u, dt) {
       u._shroomPoison = { per: total / u.def.shroomPoisonTicks, ticks: u.def.shroomPoisonTicks, acc: 0 };
       spawnDamageNumber(u, '독버섯!', { crit: true });
     } else {
+      // 최대 체력은 즉시 늘고, 늘어난 만큼은 4초에 걸쳐 회복한다. 공격력도 오른다 (독버섯은 공격력을 깎지 않는다).
       const gain = Math.round(u.maxHp * u.def.shroomHpGain);
       u.maxHp += gain;
+      u.def.atk += u.def.shroomAtkGain;
       u._shroomHeal = { perSec: gain / u.def.shroomHealTime, remaining: u.def.shroomHealTime };
-      spawnDamageNumber(u, `🍄 최대 HP +${gain}`, { heal: true });
+      spawnDamageNumber(u, `🍄 최대 HP +${gain} · ATK +${u.def.shroomAtkGain}`, { heal: true });
       updateUnitBars(u);
     }
   }
@@ -10557,6 +10571,18 @@ function tickCallingCard(u, dt) {
   const receiver = receivers[Math.floor(Math.random() * receivers.length)];
   if (receiver) setUnitLevel(receiver, receiver.level + 1);
 }
+// 해킹 순간 유닛 주변에 RGB로 어긋난 막대들이 번쩍인다
+function spawnGlitchBurst(u) {
+  const burst = document.createElement('div');
+  burst.className = 'fx-glitch-burst';
+  burst.style.left = u.x + 'px'; burst.style.top = u.y + 'px';
+  burst.innerHTML = Array.from({ length: 7 }, () => {
+    const color = ['#39ff88', '#ff2bd6', '#19c7ff'][Math.floor(Math.random() * 3)];
+    return `<i style="top:${Math.round(Math.random() * 100)}%;left:${Math.round(Math.random() * 40) - 20}%;width:${60 + Math.round(Math.random() * 80)}%;background:${color}"></i>`;
+  }).join('');
+  worldEl().appendChild(burst);
+  scheduleTask(() => burst.remove(), 450);
+}
 function tickHacker(u, dt) {
   if (u._hackTyping) {
     const typing = u._hackTyping;
@@ -10571,6 +10597,8 @@ function tickHacker(u, dt) {
     victims.forEach(x => {
       x._hacked = u.def.hackDuration;
       x.el.classList.add('hacked');
+      if (!x.el.querySelector('.glitch-overlay')) x.el.insertAdjacentHTML('beforeend', '<div class="glitch-overlay" aria-hidden="true"><i></i><i></i><i></i></div>');
+      spawnGlitchBurst(x);
       spawnDamageNumber(x, '해킹', { crit: true });
     });
     return;
