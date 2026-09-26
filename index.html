@@ -1566,6 +1566,9 @@ body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after 
 .shop-card { min-height:220px; display:flex; flex-direction:column; align-items:center; padding:14px; border:2px solid var(--border-warm); border-radius:14px; background:var(--bg-panel); text-align:center; }
 .shop-card.free { background:linear-gradient(145deg,#fff9df,#fff); border-color:#e7b838; }
 .shop-card.sold { opacity:.58; filter:grayscale(.45); }
+.shop-card.random { position:relative; }
+.shop-mystery { width:76px; height:76px; border-radius:50%; display:grid; place-items:center; font-size:40px; font-weight:900; color:#fff; background:radial-gradient(circle at 35% 30%,#666,#1b1b1b); }
+.shop-discount { position:absolute; top:8px; right:8px; padding:2px 7px; border-radius:999px; background:#e5322d; color:#fff; font-size:11px; font-weight:900; }
 .shop-card img { width:76px; height:76px; border-radius:50%; object-fit:cover; background:#eee; }
 .shop-card .shop-name { margin-top:9px; font-size:14px; font-weight:900; }
 .shop-card .shop-rarity { margin:3px 0 10px; font-size:10px; font-weight:900; color:#3f3f3a !important; }
@@ -4888,14 +4891,21 @@ function rollShopRarity() {
   if (roll < 90) return 'epic';
   return 'legend';
 }
+// 매물 중 1개는 같은 등급의 랜덤 지후를 원가의 70%에 판다. 어떤 지후인지는 구매할 때 정해진다.
+const SHOP_RANDOM_DISCOUNT = 0.7;
 function generatePaidShopOffers(serial = 0) {
   const priceByRarity = { rare: 2000, epic: 7500, legend: 30000 };
+  const randomIndex = Math.floor(Math.random() * 5);
   return Array.from({ length: 5 }, (_, index) => {
     const rarity = rollShopRarity();
+    if (index === randomIndex) return { id: `${serial}-${index}`, charId: null, random: true, rarity, price: Math.round(priceByRarity[rarity] * SHOP_RANDOM_DISCOUNT), sold: false };
     const candidates = playableIds().filter(id => CHAR_DB[id].rarity === rarity);
     const charId = candidates[Math.floor(Math.random() * candidates.length)];
     return { id: `${serial}-${index}`, charId, rarity, price: priceByRarity[rarity], sold: false };
   });
+}
+function shopOfferName(offer) {
+  return offer.charId && CHAR_DB[offer.charId] ? CHAR_DB[offer.charId].name : `랜덤 ${RARITY_LABEL[offer.rarity]} 지후`;
 }
 function createDailyShop() {
   return {
@@ -4926,10 +4936,12 @@ function renderShop() {
   </article>`];
   shop.offers.forEach(offer => {
     const character = CHAR_DB[offer.charId];
-    if (!character) return;
-    cards.push(`<article class="shop-card${offer.sold ? ' sold' : ''}" style="border-color:${rarityColorVar(offer.rarity)}">
-      <img src="${character.portrait}" alt="${character.name}"><div class="shop-name">${character.name}</div>
-      <div class="shop-rarity" style="color:${rarityColorVar(offer.rarity)}">${RARITY_LABEL[offer.rarity]}</div>
+    if (!character && !offer.random) return;
+    const art = character ? `<img src="${character.portrait}" alt="${character.name}">` : '<div class="shop-mystery" aria-hidden="true">?</div>';
+    cards.push(`<article class="shop-card${offer.sold ? ' sold' : ''}${offer.random ? ' random' : ''}" style="border-color:${rarityColorVar(offer.rarity)}">
+      ${offer.random ? '<div class="shop-discount">30% 할인</div>' : ''}
+      ${art}<div class="shop-name">${shopOfferName(offer)}</div>
+      <div class="shop-rarity" style="color:${rarityColorVar(offer.rarity)}">${RARITY_LABEL[offer.rarity]}${offer.random && !offer.sold ? ' · 구매 시 공개' : ''}</div>
       <button type="button" class="btn btn-secondary shop-buy-btn" data-offer-id="${offer.id}" ${offer.sold ? 'disabled' : ''}>${offer.sold ? '구매 완료' : `● ${formatNumber(offer.price)}`}</button>
     </article>`);
   });
@@ -4955,6 +4967,11 @@ function buyShopOffer(offerId) {
   const offer = profile.daily.shop.offers.find(item => item.id === offerId);
   if (!offer || offer.sold) return;
   if (profile.gold < offer.price) { setShopMessage('골드가 부족합니다.'); return; }
+  if (offer.random && !offer.charId) {
+    const candidates = playableIds().filter(id => CHAR_DB[id].rarity === offer.rarity);
+    if (!candidates.length) return;
+    offer.charId = candidates[Math.floor(Math.random() * candidates.length)];
+  }
   profile.gold -= offer.price;
   offer.sold = true;
   const duplicate = grantCharacter(offer.charId);
@@ -5190,7 +5207,9 @@ function renderInventory(message = '') {
     <h3>오늘의 지후 · 골드로 바로 구매</h3>
     ${profile.daily.shop.offers.map((offer, index) => {
       const character = CHAR_DB[offer.charId];
-      return character ? rewardCard(character.name, `<span class="reward-portrait"><img src="${character.portrait}" alt="">${RARITY_LABEL[character.rarity]} · ●${formatNumber(offer.price)}${offer.sold ? ' · 구매 완료' : ''}</span>`, `offerIndex:${index}`, offer.sold || profile.gold < offer.price) : '';
+      if (!character && !offer.random) return '';
+      const art = character ? `<img src="${character.portrait}" alt="">` : '';
+      return rewardCard(shopOfferName(offer), `<span class="reward-portrait">${art}${RARITY_LABEL[offer.rarity]} · ●${formatNumber(offer.price)}${offer.random ? ' · 30% 할인' : ''}${offer.sold ? ' · 구매 완료' : ''}</span>`, `offerIndex:${index}`, offer.sold || profile.gold < offer.price);
     }).join('')}`;
 }
 function activateXpBoost() {
