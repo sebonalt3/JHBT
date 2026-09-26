@@ -593,6 +593,8 @@ html, body {
   z-index: 3;
   transition: left 0.05s linear, top 0.05s linear, border-color 0.15s ease, background 0.15s ease;
 }
+.unit-range-ring { position:absolute; border-radius:50%; border:2px dashed rgba(30,30,30,.7); background:rgba(90,150,255,.06); transform:translate(-50%,-50%); pointer-events:none; z-index:3; }
+.unit-range-ring.enemy { border-color:rgba(200,40,40,.75); background:rgba(255,80,80,.06); }
 .lone-radius-ring.triggered {
   border-color: rgba(230,90,30,0.9);
   background: rgba(255,107,53,0.16);
@@ -1946,6 +1948,11 @@ html[data-theme="light"] #screen-intro,html[data-theme="light"] #screen-welcome,
 html[data-theme="light"] .battle-topbar,html[data-theme="light"] .battle-bottom { color:#171717;background:#fff !important;border-color:#bbb !important; }
 html[data-theme="light"] .round-badge { color:#111;background:#eee;border-color:#aaa; }html[data-theme="light"] .speed-badge { color:#333; }
 html[data-theme="light"] .odds-track { background:#ddd;border-color:#999; }html[data-theme="light"] .odds-ally { background:#222; }html[data-theme="light"] .odds-enemy { background:#aaa; }
+/* 승률 게이지: 아군 초록, 적군 빨강 (테마와 관계없이) */
+html .odds-track .odds-ally, html[data-theme] .odds-track .odds-ally { background:#2fb344; }
+html .odds-track .odds-enemy, html[data-theme] .odds-track .odds-enemy { background:#e03131; }
+html .odds-lab .oa, html[data-theme] .odds-lab .oa { color:#2fb344; }
+html .odds-lab .oe, html[data-theme] .odds-lab .oe { color:#e03131; }
 html[data-theme="light"] .odds-hp { color:#555; }
 html[data-theme="light"] .battle-arena { background:#ececea !important; }
 html[data-theme="light"] .battle-world { background:linear-gradient(#d6d6d3 1px,transparent 1px),linear-gradient(90deg,#d6d6d3 1px,transparent 1px),#fafaf8;background-size:40px 40px; }
@@ -2014,7 +2021,7 @@ html[data-theme="light"] .leaderboard-detail-hero span { color:#6b5018; }
 .fx-dragon-fire.fx-skid { background:linear-gradient(180deg, transparent 18%, rgba(25,25,25,.5) 18% 32%, transparent 32% 68%, rgba(25,25,25,.5) 68% 82%, transparent 82%); box-shadow:none; }
 .fx-lasso.fx-tentacle { background:linear-gradient(90deg, rgba(79,214,234,.25), rgba(79,214,234,.85)); border-radius:0 40px 40px 0; box-shadow:0 0 12px rgba(79,214,234,.8); }
 /* 아공간 · 러시안룰렛 · 포식 · 주사 */
-.unit.in-realm { filter:sepia(.6) hue-rotate(220deg) saturate(2.4) drop-shadow(0 0 8px rgba(138,77,232,.9)); opacity:.88; }
+.unit.in-realm { filter:sepia(.6) hue-rotate(220deg) saturate(2.4) drop-shadow(0 0 8px rgba(138,77,232,.9)); opacity:.5; }
 .unit.in-realm .unit-icon { box-shadow:0 0 0 3px rgba(138,77,232,.55); border-radius:50%; }
 .fx-realm-vanish { position:absolute; width:20px; height:20px; border-radius:50%; transform:translate(-50%,-50%); border:4px solid #8a4de8; box-shadow:0 0 18px #8a4de8, inset 0 0 12px #b58cff; animation:realm-vanish .55s ease-out forwards; pointer-events:none; z-index:6; }
 @keyframes realm-vanish { from { width:20px; height:20px; opacity:1; } to { width:150px; height:150px; opacity:0; } }
@@ -6289,7 +6296,7 @@ function emitCastleWave(castle) {
 }
 
 function clearArenaUnits() {
-  document.querySelectorAll('.unit, .fx-pulse, .fx-dagger, .fx-projectile, .fx-syringe-shot, .fx-burst, .fx-death-fx, .lone-radius-ring, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam, .fx-orbit-satellite, .fx-dust-zone').forEach(el => el.remove()); if (state) state.mines = [];
+  document.querySelectorAll('.unit, .fx-pulse, .fx-dagger, .fx-projectile, .fx-syringe-shot, .fx-burst, .fx-death-fx, .lone-radius-ring, .unit-range-ring, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam, .fx-orbit-satellite, .fx-dust-zone').forEach(el => el.remove()); if (state) state.mines = [];
 }
 
 function completeDeployAction(delay = 700) {
@@ -6406,6 +6413,7 @@ function tryDeployMergeOrPlace(x, y, clickedUnit) {
 }
 
 $('battleArena').addEventListener('click', e => {
+  if (!CAM.moved) hideRangeRing(); // 빈 필드를 누르면 사거리 원을 지운다 (드래그는 제외, 유닛 클릭은 전파를 막는다)
   if (state.phase !== 'deploy' || pendingPoolIdx === null) { CAM.moved = false; return; }
   if (CAM.moved && !(e.target.closest && e.target.closest('.unit'))) { CAM.moved = false; return; }
   CAM.moved = false;
@@ -6870,6 +6878,7 @@ function spawnUnit(side, x, y, charId, opts) {
       }
     }
     showCharDetail(def, unit);
+    showRangeRing(unit);
   });
   if (charId === 'mini' && !opts.asExtra) {
     const extraOffset = bodySeparation(unit, { def, level: opts.level || 1 }) + 4;
@@ -6974,6 +6983,30 @@ function physSyncDom(u, alpha) {
     u.ringEl.style.left = x + "px";
     u.ringEl.style.top = y + "px";
   }
+  if (rangeRing && rangeRing.unit === u) positionRangeRing(u.alive ? x : null, y);
+}
+
+// 필드의 지후를 누르면 사거리를 점선 원으로 보여준다 (공격 판정과 같은 중심 거리)
+let rangeRing = null;
+function showRangeRing(u) {
+  hideRangeRing();
+  if (!u || !u.alive || u.isCastle || !u.def.range) return;
+  const el = document.createElement('div');
+  el.className = 'unit-range-ring' + (u.side === 'enemy' ? ' enemy' : '');
+  worldEl().appendChild(el);
+  rangeRing = { el, unit: u };
+  positionRangeRing(u.x, u.y);
+}
+function positionRangeRing(x, y) {
+  if (!rangeRing) return;
+  if (x == null) { hideRangeRing(); return; }
+  const d = attackDist(rangeRing.unit, null) * 2;
+  rangeRing.el.style.width = d + 'px'; rangeRing.el.style.height = d + 'px';
+  rangeRing.el.style.left = x + 'px'; rangeRing.el.style.top = y + 'px';
+}
+function hideRangeRing() {
+  if (rangeRing) rangeRing.el.remove();
+  rangeRing = null;
 }
 
 function physWalls(u) {
