@@ -2120,7 +2120,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
     <div id="attendanceNotice" class="settlement-note" hidden>🎉 신규 유저 출석부가 해금되었습니다! 출석부에서 보상을 받으세요.</div>
     <div class="lobby-2-grid">
       <button type="button" class="lobby-tile" id="btnEnterDraft"><span class="ico">01</span><div class="t">덱 설정</div><div class="d">해금한 지후로 선택한 덱 슬롯을 편성</div></button>
-      <button type="button" class="lobby-tile" id="btnOpenGacha"><span class="ico">02</span><div class="t">캐릭터 뽑기</div><div class="d">◆100 1회 · ◆1000 10+1회</div></button>
+      <button type="button" class="lobby-tile" id="btnOpenGacha"><span class="ico">02</span><div class="t">캐릭터 뽑기</div><div class="d">◆100 1회 · ◆1000 지후 상자</div></button>
       <button type="button" class="lobby-tile" id="btnOpenShop"><span class="ico">03</span><div class="t">일일 상점</div><div class="d">무료 보상 · 지후 구매 · 다이아 환전</div></button>
       <button type="button" class="lobby-tile primary" id="btnStartGame"><span class="ico">04</span><div class="t">게임 시작</div><div class="d">선택한 덱으로 라이프 4 랭크전 시작</div></button>
       <button type="button" class="lobby-tile" id="btnStartCastle" disabled aria-disabled="true" title="리뉴얼 준비 중"><span class="ico">05</span><div class="t">성뿌수기</div><div class="d">리뉴얼 준비 중 · 입장 불가</div></button>
@@ -2186,7 +2186,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
           <div class="gacha-odds" id="gachaOdds"></div>
           <div class="gacha-actions">
             <button type="button" class="btn btn-secondary" id="btnGachaOne">◆ 100 · 1회 뽑기</button>
-            <button type="button" class="btn btn-primary" id="btnGachaEleven">◆ 1000 · 10+1회 뽑기</button>
+            <button type="button" class="btn btn-primary" id="btnGachaEleven">◆ 1000 · 지후 상자</button>
           </div>
         </div>
         <div class="gacha-result" id="gachaResult"></div>
@@ -4821,9 +4821,11 @@ function renderGachaView(view = gachaView) {
   $('gachaSpotlightPortrait').src = spotlight?.portrait || '';
   $('gachaSpotlightPortrait').alt = spotlight?.name || '';
   $('gachaTitle').textContent = pickup ? '오늘의 전설 픽업' : '지후 소환';
-  $('gachaOdds').innerHTML = pickup
-    ? '전설 3.3% · 영웅 10% · 희귀 38.5% · 일반 48.2%<br>전설 등장 시 66.6% 확률로 오늘의 픽업 지후가 등장합니다. 히든은 등장하지 않습니다.'
-    : '히든 0.3% · 전설 3% · 영웅 10% · 희귀 38.5% · 일반 48.2%<br>10+1회에는 영웅 이상 1기 보정이 적용됩니다. 중복은 해당 지후 조각 10개로 바뀝니다.';
+  $('gachaOdds').innerHTML = (pickup
+    ? '1회: 전설 3.3% · 영웅 10% · 희귀 38.5% · 일반 48.2%<br>'
+    : '1회: 히든 0.3% · 전설 3% · 영웅 10% · 희귀 38.5% · 일반 48.2%<br>')
+    + '지후 상자: 일반·희귀 8기 확정 · 영웅 55% → 성공 시 전설 50%' + (pickup ? '' : ' → 성공 시 히든 20%') + '<br>'
+    + (pickup ? '전설 등장 시 66.6% 확률로 오늘의 픽업 지후가 등장합니다. 히든은 등장하지 않습니다.' : '중복은 해당 지후 조각 10개로 바뀝니다.');
   const artIds = playableIds().filter(id => CHAR_DB[id].rarity !== 'hidden').slice(0,6);
   $('gachaDecor').innerHTML = artIds.map(id => `<img src="${CHAR_DB[id].portrait}" alt="">`).join('');
   if (pickup) startCombatPreview($('gachaPreview'), gachaSpotlightId);
@@ -4841,15 +4843,20 @@ function rollGachaCharacter(mode = gachaView) {
   const candidates = playableIds().filter(id => CHAR_DB[id].rarity === rarity);
   return candidates[Math.floor(Math.random() * candidates.length)] || STARTER_IDS[0];
 }
-function rollGachaBatch(count, mode = gachaView) {
-  const ids = Array.from({ length: count }, () => rollGachaCharacter(mode));
-  if (count === 11 && !ids.some(id => ['epic', 'legend', 'hidden'].includes(CHAR_DB[id].rarity))) {
-    const replace = ids.findIndex(id => CHAR_DB[id].rarity === 'common');
-    const rare = ids.findIndex(id => CHAR_DB[id].rarity === 'rare');
-    if (replace >= 0 || rare >= 0) {
-      const epicIds = playableIds().filter(id => CHAR_DB[id].rarity === 'epic');
-      ids[replace >= 0 ? replace : rare] = epicIds[Math.floor(Math.random() * epicIds.length)];
-    }
+// 지후 상자: 일반·희귀 8기 확정 + 계단식 칸. 앞 칸이 성공해야 다음 칸에 도전한다.
+// 영웅 55% → 전설 50% → 히든 20% (픽업은 히든 칸 없음). 결과는 8~11기.
+const GACHA_BOX_BASE = 8;
+const GACHA_BOX_STEPS = { normal: [['epic', 55], ['legend', 50], ['hidden', 20]], pickup: [['epic', 55], ['legend', 50]] };
+function pickGachaCharacter(rarity, mode = gachaView) {
+  if (mode === 'pickup' && rarity === 'legend' && Math.random() < .666) return dailyPickupId();
+  const candidates = playableIds().filter(id => CHAR_DB[id].rarity === rarity);
+  return candidates[Math.floor(Math.random() * candidates.length)] || STARTER_IDS[0];
+}
+function rollGachaBox(mode = gachaView) {
+  const ids = Array.from({ length: GACHA_BOX_BASE }, () => pickGachaCharacter(Math.random() < 60 / 90 ? 'common' : 'rare', mode));
+  for (const [rarity, chance] of GACHA_BOX_STEPS[mode === 'pickup' ? 'pickup' : 'normal']) {
+    if (Math.random() * 100 >= chance) break;
+    ids.push(pickGachaCharacter(rarity, mode));
   }
   return ids;
 }
@@ -5004,11 +5011,12 @@ function showGachaReveal(index) {
   overlay.classList.add('show', 'opening');
   overlay.setAttribute('aria-hidden', 'false');
   $('gachaRevealCount').textContent = `${index + 1} / ${gachaRevealResults.length}`;
-  $('gachaRevealRarity').textContent = '소환 중…';
+  const total = gachaRevealResults.length;
+  $('gachaRevealRarity').textContent = total > 1 && index === 0 ? `총 ${total}개` : '소환 중…';
   $('gachaRevealName').textContent = '';
   $('gachaRevealDesc').textContent = '';
   $('btnGachaRevealNext').disabled = true;
-  $('btnGachaRevealNext').textContent = index === gachaRevealResults.length - 1 ? '확인' : '다음';
+  $('btnGachaRevealNext').textContent = index === total - 1 ? '확인' : '다음';
   const delays = { common: 650, rare: 900, epic: 1200, legend: 1650, hidden: 3000 };
   clearTimeout(gachaRevealTimer);
   gachaRevealTimer = setTimeout(() => {
@@ -5020,7 +5028,7 @@ function showGachaReveal(index) {
     overlay.classList.remove('opening');
     $('btnGachaRevealNext').disabled = false;
     $('btnGachaRevealNext').focus();
-  }, delays[character.rarity]);
+  }, delays[character.rarity] + (total > 1 && index === 0 ? 1200 : 0)); // 첫 장은 총 개수를 읽을 시간을 준다
 }
 
 $('btnGachaRevealNext').addEventListener('click', () => showGachaReveal(gachaRevealIndex + 1));
@@ -5037,7 +5045,7 @@ function grantCharacter(id) {
   return duplicate;
 }
 
-function performGacha(count, cost) {
+function performGacha(box, cost) {
   if (gachaRevealResults.length) return;
   if (profile.diamonds < cost) {
     $('gachaResult').innerHTML = '<div class="settlement-note" style="grid-column:1/-1;text-align:center;">다이아가 부족합니다. 랭크전 승리 시 100~200 다이아를 획득합니다.</div>';
@@ -5047,13 +5055,13 @@ function performGacha(count, cost) {
   if (mode === 'history') return;
   profile.diamonds -= cost;
   const results = [];
-  for (const id of rollGachaBatch(count, mode)) {
+  for (const id of box ? rollGachaBox(mode) : [rollGachaCharacter(mode)]) {
     const duplicate = grantCharacter(id);
     results.push({ id, duplicate });
     profile.gachaHistory.push({ id, mode, duplicate, at:Date.now() });
   }
   profile.gachaHistory = profile.gachaHistory.slice(-200);
-  recordDailyProgress('gacha', count);
+  recordDailyProgress('gacha', results.length);
   saveProfile();
   $('gachaResult').innerHTML = results.map((result, index) => {
     const c = CHAR_DB[result.id];
@@ -5359,8 +5367,8 @@ $('btnOpenGacha').addEventListener('click', () => { $('gachaResult').innerHTML =
 $('btnGachaBack').addEventListener('click', () => { stopCombatPreview($('gachaPreview')); showScreen('lobby'); });
 document.querySelectorAll('[data-gacha-view]').forEach(button => button.addEventListener('click', () => renderGachaView(button.dataset.gachaView)));
 setInterval(() => { if (state.screen === 'gacha' && localDayKey() !== pickupDayShown) renderGachaView(gachaView); }, 30000);
-$('btnGachaOne').addEventListener('click', () => performGacha(1, 100));
-$('btnGachaEleven').addEventListener('click', () => performGacha(11, 1000));
+$('btnGachaOne').addEventListener('click', () => performGacha(false, 100));
+$('btnGachaEleven').addEventListener('click', () => performGacha(true, 1000));
 
 const ARENA_MAX = 8;
 const ARENA_MAX_LEVEL = 7;
