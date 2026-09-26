@@ -1469,6 +1469,12 @@ body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after 
 .lobby-2-grid { width:min(760px,100%); display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
 .lobby-tile { min-height:105px; padding:14px; border:1px solid var(--border-warm); border-radius:16px; background:var(--bg-panel); color:var(--text-main); text-align:left; cursor:pointer; box-shadow:0 4px 14px rgba(40,30,10,.06); }
 .lobby-tile:disabled { opacity:.5; cursor:not-allowed; }
+.start-tile-wrap { grid-column:span 2; position:relative; display:flex; }
+.start-tile-wrap > .lobby-tile { flex:1; min-width:0; }
+.boost-fire-btn { position:absolute; left:10px; top:0; transform:translateY(-50%); z-index:3; padding:5px 12px; border:2px solid #ffb199; border-radius:999px; font:inherit; font-size:12px; font-weight:900; color:#fff; background:linear-gradient(180deg,#ff5a36,#c8102e 60%,#8a0a1f); box-shadow:0 0 10px rgba(255,70,40,.75),0 0 22px rgba(255,120,40,.45); cursor:pointer; animation:boost-fire 1.1s ease-in-out infinite alternate; }
+.boost-fire-btn:disabled { cursor:default; opacity:.55; animation:none; box-shadow:none; }
+.boost-fire-btn.active { background:linear-gradient(180deg,#ffb020,#ff3d1f 55%,#b0101f); animation-duration:.45s; }
+@keyframes boost-fire { from { box-shadow:0 0 8px rgba(255,70,40,.7),0 0 16px rgba(255,140,40,.35); } to { box-shadow:0 0 14px rgba(255,70,40,.95),0 -4px 26px rgba(255,170,40,.7); } }
 .lobby-tile.primary { grid-column:span 2; background:linear-gradient(135deg,#1d1d1b,#3d3d38); color:#fff; }
 .lobby-tile .ico { font-size:23px; }
 .lobby-tile .t { margin-top:8px; font-size:16px; font-weight:900; }
@@ -1677,6 +1683,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 #screen-lobby .lobby-tile .ico { display:grid;place-items:center;width:38px;height:38px;color:#fff;background:#292929;border:1px solid #777;border-radius:3px;filter:none;font:900 13px ui-monospace,monospace; }
 #screen-lobby .lobby-tile .t { font-size:16px;color:#fff; }
 #screen-lobby .lobby-tile .d { margin-top:4px;font-size:11px;color:#b5b5b5; }
+#screen-lobby .start-tile-wrap { grid-column:span 2; }
 #screen-lobby .lobby-tile.primary { grid-column:span 2;color:#080808;background:#efefef;border-color:#fff;box-shadow:none; }
 #screen-lobby .lobby-tile.primary:hover { background:#d8d8d8; }
 #screen-lobby .lobby-tile.primary .ico { color:#fff;background:#111;border-color:#111; }
@@ -2129,7 +2136,10 @@ html.preview-mode .round-result-box { transform:scale(.5); }
       <button type="button" class="lobby-tile" id="btnEnterDraft"><span class="ico">01</span><div class="t">덱 설정</div><div class="d">해금한 지후로 선택한 덱 슬롯을 편성</div></button>
       <button type="button" class="lobby-tile" id="btnOpenGacha"><span class="ico">02</span><div class="t">캐릭터 뽑기</div><div class="d">◆100 1회 · ◆1000 지후 상자</div></button>
       <button type="button" class="lobby-tile" id="btnOpenShop"><span class="ico">03</span><div class="t">일일 상점</div><div class="d">무료 보상 · 지후 구매 · 다이아 환전</div></button>
-      <button type="button" class="lobby-tile primary" id="btnStartGame"><span class="ico">04</span><div class="t">게임 시작</div><div class="d">선택한 덱으로 라이프 4 랭크전 시작</div></button>
+      <div class="start-tile-wrap">
+        <button type="button" class="lobby-tile primary" id="btnStartGame"><span class="ico">04</span><div class="t">게임 시작</div><div class="d">선택한 덱으로 라이프 4 랭크전 시작</div></button>
+        <button type="button" class="boost-fire-btn" id="btnLobbyBoost" title="경험치 ×2 · 부스트 중 승리 시 다이아 100~200">🔥 부스트</button>
+      </div>
       <button type="button" class="lobby-tile" id="btnStartCastle" disabled aria-disabled="true" title="리뉴얼 준비 중"><span class="ico">05</span><div class="t">성뿌수기</div><div class="d">리뉴얼 준비 중 · 입장 불가</div></button>
       <button type="button" class="lobby-tile" id="btnOpenQuests"><span class="ico">07</span><div class="t">일일 퀘스트</div><div class="d"><span id="dailyPointBadge">100</span> / 600P · 보상 ◆500</div></button>
       <button type="button" class="lobby-tile" id="btnOpenLeaderboard"><span class="ico">08</span><div class="t">리더보드</div><div class="d">레벨 · 마지막 덱 · 플레이어 정보</div></button>
@@ -4457,6 +4467,7 @@ function renderAccountUI() {
   if ($('dailyPointBadge') && profile.daily) $('dailyPointBadge').textContent = formatNumber(profile.daily.points);
   if ($('ownedMeta')) $('ownedMeta').textContent = `보유 ${developerMode ? playableIds().length : profile.unlocked.length}기`;
   if ($('attendanceNotice')) $('attendanceNotice').hidden = !profile.newcomer.noticePending;
+  renderLobbyBoost();
   document.body.classList.toggle('reduce-motion', profile.settings.reduceMotion);
   const presets = $('deckPresets');
   if (presets) {
@@ -5055,7 +5066,7 @@ function grantCharacter(id) {
 function performGacha(box, cost) {
   if (gachaRevealResults.length) return;
   if (profile.diamonds < cost) {
-    $('gachaResult').innerHTML = '<div class="settlement-note" style="grid-column:1/-1;text-align:center;">다이아가 부족합니다. 랭크전 승리 시 100~200 다이아를 획득합니다.</div>';
+    $('gachaResult').innerHTML = '<div class="settlement-note" style="grid-column:1/-1;text-align:center;">다이아가 부족합니다. 경험치 부스트 중 랭크전에서 승리하면 100~200 다이아를 획득합니다.</div>';
     return;
   }
   const mode = gachaView;
@@ -5108,7 +5119,8 @@ function settleMatch(won, draw, surrendered = false) {
   if (!draw && won) {
     xp = 100 + Math.floor(Math.random() * 51);
     if (!castleMode) {
-      diamonds = 100 + Math.floor(Math.random() * 101);
+      // 업적 보상이 생기면서 승리 다이아는 경험치 부스트 중에만 준다
+      diamonds = profile.xpBoost.activeUntil > Date.now() ? 100 + Math.floor(Math.random() * 101) : 0;
       gold = 1000 + Math.floor(Math.random() * 1001);
       profile.wins++;
     }
@@ -5168,7 +5180,7 @@ function renderInventory(message = '') {
     ${rewardCard('◆ 다이아 ' + formatNumber(profile.diamonds), '뽑기에 사용하거나 여기서 골드로 교환할 수 있습니다.', 'gacha')}
     ${rewardCard('다이아 ◆100 → 골드 ●1,000', '인벤토리에서 바로 교환', 'exchange100', profile.diamonds < 100)}
     ${rewardCard('다이아 ◆1,000 → 골드 ●11,000', '인벤토리에서 바로 교환', 'exchange1000', profile.diamonds < 1000)}
-    ${rewardCard('경험치 부스트 ×2 · 10분', activeSeconds ? `활성 중 · ${Math.floor(activeSeconds / 60)}분 ${activeSeconds % 60}초 남음` : `◆300 · 오늘 ${profile.xpBoost.usesToday}/2회 사용`, 'boost', activeSeconds > 0 || profile.xpBoost.usesToday >= 2 || profile.diamonds < 300)}
+    ${rewardCard('경험치 부스트 · 10분 · 경험치 ×2 · 승리 시 ◆100~200', activeSeconds ? `활성 중 · ${Math.floor(activeSeconds / 60)}분 ${activeSeconds % 60}초 남음` : `◆300 · 오늘 ${profile.xpBoost.usesToday}/2회 사용`, 'boost', activeSeconds > 0 || profile.xpBoost.usesToday >= 2 || profile.diamonds < 300)}
     ${rewardCard('랜덤 영웅 모집권 ×' + profile.inventory.epicTicket, '영웅 등급 지후 1기를 모집합니다. 중복은 조각 10개로 전환됩니다.', 'epicTicket', !profile.inventory.epicTicket)}
     ${rewardCard('랜덤 전설 모집권 ×' + profile.inventory.legendTicket, '전설 등급 지후 1기를 모집합니다. 중복은 조각 10개로 전환됩니다.', 'legendTicket', !profile.inventory.legendTicket)}
     ${rewardCard('지후 조각', shards || '보유한 조각이 없습니다.')}
@@ -5177,6 +5189,27 @@ function renderInventory(message = '') {
       const character = CHAR_DB[offer.charId];
       return character ? rewardCard(character.name, `<span class="reward-portrait"><img src="${character.portrait}" alt="">${RARITY_LABEL[character.rarity]} · ●${formatNumber(offer.price)}${offer.sold ? ' · 구매 완료' : ''}</span>`, `offerIndex:${index}`, offer.sold || profile.gold < offer.price) : '';
     }).join('')}`;
+}
+function activateXpBoost() {
+  ensureDailyState();
+  if (profile.xpBoost.activeUntil > Date.now() || profile.xpBoost.usesToday >= 2 || profile.diamonds < 300) return false;
+  profile.diamonds -= 300;
+  profile.xpBoost.usesToday++;
+  profile.xpBoost.activeUntil = Date.now() + 10 * 60 * 1000;
+  return true;
+}
+function renderLobbyBoost() {
+  const button = $('btnLobbyBoost');
+  if (!button || !profile.xpBoost) return;
+  const left = Math.max(0, Math.ceil((profile.xpBoost.activeUntil - Date.now()) / 1000));
+  button.classList.toggle('active', left > 0);
+  if (left > 0) {
+    button.textContent = `🔥 부스트 ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    button.disabled = false;
+  } else {
+    button.textContent = profile.xpBoost.usesToday >= 2 ? '🔥 부스트 0/2' : `🔥 부스트 ◆300 · ${2 - profile.xpBoost.usesToday}/2`;
+    button.disabled = profile.xpBoost.usesToday >= 2 || profile.diamonds < 300;
+  }
 }
 function useInventoryAction(action) {
   if (action === 'shop' || action === 'gacha') {
@@ -5200,12 +5233,8 @@ function useInventoryAction(action) {
     profile.diamonds -= cost; profile.gold += gold;
     message = `다이아 ${formatNumber(cost)}를 골드 ${formatNumber(gold)}로 교환했습니다.`;
   } else if (action === 'boost') {
-    ensureDailyState();
-    if (profile.xpBoost.activeUntil > Date.now() || profile.xpBoost.usesToday >= 2 || profile.diamonds < 300) return;
-    profile.diamonds -= 300;
-    profile.xpBoost.usesToday++;
-    profile.xpBoost.activeUntil = Date.now() + 10 * 60 * 1000;
-    message = '경험치 부스트 ×2가 10분간 활성화되었습니다.';
+    if (!activateXpBoost()) return;
+    message = '경험치 부스트가 10분간 활성화되었습니다. 경험치 ×2, 승리 시 다이아 100~200.';
   } else if (action === 'epicTicket' || action === 'legendTicket') {
     if (!profile.inventory[action]) return;
     const rarity = action === 'epicTicket' ? 'epic' : 'legend';
@@ -5364,6 +5393,13 @@ function renderLobbyPreview() {
   });
 }
 $('btnEnterDraft').addEventListener('click', () => { state.draftSelected = currentDeck(); draftPendingEquip = null; renderDraftGrid(); $('draftGrid').scrollTop = 0; showScreen('draft'); });
+$('btnLobbyBoost').addEventListener('click', () => {
+  if (profile.xpBoost.activeUntil > Date.now()) return;
+  if (!activateXpBoost()) return;
+  saveProfile();
+  renderAccountUI();
+});
+setInterval(() => { if (state.screen === 'lobby') renderLobbyBoost(); }, 1000);
 $('btnStartGame').addEventListener('click', () => {
   const deck = currentDeck();
   if (deck.length !== 5) { state.draftSelected = deck; draftPendingEquip = null; renderDraftGrid(); $('draftGrid').scrollTop = 0; showScreen('draft'); return; }
