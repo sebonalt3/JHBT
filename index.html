@@ -286,6 +286,9 @@ html, body {
 
 /* 각성 지후 — 각성 상태 연출 */
 .unit.awakened { border-color: #4ae0c4; box-shadow: 0 0 0 3px rgba(74,224,196,0.35), 0 0 16px rgba(74,224,196,0.7); animation: awaken-pulse 1.2s ease-in-out infinite; }
+/* 각성 중: 2초간 멈춰서 아우라를 뿜는다 */
+.unit.awakening { border-color: #aefcf0; animation: awaken-aura 0.4s ease-in-out infinite alternate; }
+@keyframes awaken-aura { from { box-shadow: 0 0 0 4px rgba(74,224,196,0.5), 0 0 22px 6px rgba(74,224,196,0.7); } to { box-shadow: 0 0 0 10px rgba(74,224,196,0.25), 0 0 46px 18px rgba(174,252,240,0.85); } }
 @keyframes awaken-pulse { 0%,100% { box-shadow: 0 0 0 3px rgba(74,224,196,0.35), 0 0 14px rgba(74,224,196,0.6); } 50% { box-shadow: 0 0 0 5px rgba(74,224,196,0.2), 0 0 24px rgba(74,224,196,0.9); } }
 
 /* 신규 캐릭터 연출 */
@@ -2003,6 +2006,9 @@ html[data-theme="light"] .leaderboard-detail-hero span { color:#6b5018; }
 .unit.in-realm .unit-icon { box-shadow:0 0 0 3px rgba(138,77,232,.55); border-radius:50%; }
 .fx-realm-vanish { position:absolute; width:20px; height:20px; border-radius:50%; transform:translate(-50%,-50%); border:4px solid #8a4de8; box-shadow:0 0 18px #8a4de8, inset 0 0 12px #b58cff; animation:realm-vanish .55s ease-out forwards; pointer-events:none; z-index:6; }
 @keyframes realm-vanish { from { width:20px; height:20px; opacity:1; } to { width:150px; height:150px; opacity:0; } }
+.rr-mag { position:absolute; left:50%; top:-16px; transform:translateX(-50%); display:flex; gap:2px; padding:2px 3px; border-radius:6px; background:rgba(0,0,0,.6); z-index:8; pointer-events:none; }
+.rr-mag i { width:6px; height:6px; border-radius:50%; background:#f2c94c; box-shadow:0 0 3px #f2c94c; }
+.rr-mag i.spent { background:transparent; box-shadow:none; border:1px solid #888; width:4px; height:4px; }
 .rr-gun { position:absolute; left:50%; top:50%; width:0; height:0; transition:transform .35s ease; z-index:7; pointer-events:none; }
 .rr-gun-body { position:absolute; left:0; top:0; transform:translate(28px,-50%); transition:transform .35s ease; }
 .rr-gun.self .rr-gun-body { transform:translate(30px,-50%) scaleX(-1); }
@@ -2011,6 +2017,7 @@ html[data-theme="light"] .leaderboard-detail-hero span { color:#6b5018; }
 @keyframes rr-flash { from { opacity:1; transform:scale(1.4); } to { opacity:0; transform:scale(.6); } }
 .unit.rr-guard { box-shadow:0 0 0 4px rgba(90,170,255,.55), 0 0 16px rgba(90,170,255,.8) !important; }
 .unit.feasting { box-shadow:0 0 0 3px rgba(192,38,45,.5), 0 0 18px rgba(192,38,45,.8) !important; }
+.fx-syringe-shot { position:absolute; width:26px; height:6px; border-radius:3px; background:linear-gradient(90deg, rgba(47,196,106,.15), #2fc46a 60%, #eafff1); box-shadow:0 0 8px rgba(47,196,106,.9); z-index:9; pointer-events:none; }
 .fx-lasso.fx-syringe { background:linear-gradient(90deg, rgba(47,196,106,.2), rgba(47,196,106,.95)); box-shadow:0 0 10px rgba(47,196,106,.8); border-radius:0 6px 6px 0; }
 /* 전투 미리보기 창(?preview=): 전장만 남긴다. */
 html.preview-mode, html.preview-mode body { overflow:hidden; background:#171717; }
@@ -2530,7 +2537,7 @@ html.preview-mode .round-result-box { transform:scale(.5); }
 const CHARACTER_BALANCE = {
   roulette: {
     hp: 4200, atk: 0, atkSpeed: 1.5, range: 112.5, speed: 72,
-    rouletteChambers: 6, rouletteTurnMin: 2, rouletteTurnMax: 2.5, rouletteSelfDr: 0.95
+    rouletteChambers: 6, rouletteSelfTime: 1.5, rouletteTargetTime: 2, rouletteSelfDr: 0.95
   },
   dimension: {
     hp: 3200, atk: 300, atkSpeed: 1.1, range: 99, speed: 103.5,
@@ -2539,7 +2546,7 @@ const CHARACTER_BALANCE = {
   },
   syringe: {
     hp: 1800, atk: 0, atkSpeed: 4, range: 315, speed: 90,
-    syringePoisonDps: 250, syringePoisonDuration: 3, syringeHealPerSec: 250, syringeHealDuration: 3
+    syringePoisonDps: 350, syringePoisonDuration: 3, syringeHealPerSec: 350, syringeHealDuration: 3, syringeShotSpeed: 900
   },
   glutton: {
     hp: 3400, atk: 250, atkSpeed: 1.3, range: 72, speed: 81,
@@ -2560,15 +2567,15 @@ const CHARACTER_BALANCE = {
     skidDuration: 4, skidInterval: 0.5, skidDamage: 120
   },
   tentacle: {
-    hp: 2800, atk: 700, atkSpeed: 3.2, range: 225, speed: 90,
-    slowAmount: 0.5, slowDuration: 2.5, blindChance: 0.2, blindDuration: 3, blindMissChance: 0.5
+    hp: 2800, atk: 800, atkSpeed: 3.2, range: 225, speed: 90,
+    slowAmount: 0.5, slowDuration: 2.5, blindChance: 0.3, blindDuration: 3, blindMissChance: 0.5
   },
   engineer: {
     hp: 1900, atk: 300, atkSpeed: 5, range: 360, speed: 72,
     turretCooldown: 18
   },
   turret: {
-    hp: 2400, atk: 200, atkSpeed: 0.25, range: 247.5, speed: 0,
+    hp: 2400, atk: 350, atkSpeed: 0.5, range: 247.5, speed: 0,
     immobile: true
   },
   curse: {
@@ -2624,10 +2631,10 @@ const CHARACTER_BALANCE = {
     healAmount: 1200
   },
   awaken: {
-    hp: 1250, atk: 50, atkSpeed: 1.0, range: 72, speed: 0.1,
+    hp: 4000, atk: 50, atkSpeed: 1.0, range: 72, speed: 0.1,
     isMelee: true,
-    awakenTime: 27,
-    awakenStats: { hp: 8750, atk: 500, atkSpeed: 0.5, range: 225, speed: 100 }
+    awakenTime: 27, awakenChannel: 2,
+    awakenStats: { hp: 8000, atk: 1000, atkSpeed: 0.5, range: 72, speed: 216 }
   },
   berserk: {
     hp: 2750, atk: 250, atkSpeed: 1.2, range: 72, speed: 100,
@@ -3286,7 +3293,7 @@ const CHAR_DB = {
     rarity: 'legend', color: '#7a4a24', portrait: PORTRAITS.roulette,
     ...CHARACTER_BALANCE.roulette,
     customTick(u, target, dist, dt) { return rouletteTick(u, target, dist, dt); },
-    skillDesc: '권총에 실탄 1발, 공포탄 5발. 사거리 안에 적이 들어오면 <b>자신</b>에게 먼저 쏘고, 살아남으면 <b>대상</b>에게 쏜다. 실탄에 맞은 쪽은 즉사하고, 대상이 살아남으면 다시 자신에게 총구를 돌린다 (한 번 돌려 쏘는 데 2~2.5초). 총구가 자신을 향한 동안 받는 피해 <b>95%</b> 감소.'
+    skillDesc: '권총에 실탄 1발, 공포탄 5발. 사거리 안에 적이 들어오면 <b>자신</b>에게 먼저 쏘고, 살아남으면 <b>대상</b>에게 쏜다. 실탄에 맞은 쪽은 즉사하고, 대상이 살아남으면 다시 자신에게 총구를 돌린다 (자신에게 쏘기까지 <b>1.5초</b>, 대상에게 쏘기까지 <b>2초</b>). 유닛 위에 남은 탄창이 표시된다. 총구가 자신을 향한 동안 받는 피해 <b>95%</b> 감소.'
   },
   dimension: {
     id: 'dimension', name: '차원 지후', emoji: '🌌', role: 'assassin', roleLabel: '어쌔신',
@@ -3300,7 +3307,7 @@ const CHAR_DB = {
     rarity: 'epic', color: '#2fc46a', portrait: PORTRAITS.syringe,
     ...CHARACTER_BALANCE.syringe,
     customAttack(caster, target) { syringeShot(caster, target); },
-    skillDesc: '4초마다 사거리 7칸 끝까지 <b>모든 유닛을 관통</b>하는 주사를 쏜다. 맞은 적은 독(초당 250, 3초), 맞은 아군은 초당 250씩 3초간 회복.'
+    skillDesc: '4초마다 사거리 7칸 끝까지 날아가며 <b>모든 유닛을 관통</b>하는 주사 투사체를 쏜다. 맞은 적은 독(초당 <b>350</b>, 3초), 맞은 아군은 초당 <b>350</b>씩 3초간 회복.'
   },
   glutton: {
     id: 'glutton', name: '포식 지후', emoji: '🦷', role: 'dealer', roleLabel: '딜러',
@@ -3328,13 +3335,13 @@ const CHAR_DB = {
     rarity: 'epic', color: '#4fd6ea', portrait: PORTRAITS.tentacle, portraitAttack: PORTRAITS.tentacle_attack,
     ...CHARACTER_BALANCE.tentacle,
     customAttack(caster, target) { tentacleStrike(caster, target); },
-    skillDesc: '대상 방향 5칸 길이, 몸 반지름 폭의 직선에 촉수를 내리쳐 범위 안 모든 적에게 <b>700</b> 피해와 2.5초 둔화(이동속도 -50%). 20% 확률로 먹물을 뿌려 3초간 <b>눈가림</b>(명중률 -50%).'
+    skillDesc: '대상 방향 5칸 길이, <b>몸 지름 1.5배</b> 폭의 직선에 촉수를 내리쳐 범위 안 모든 적에게 <b>800</b> 피해와 2.5초 둔화(이동속도 -50%). <b>30%</b> 확률로 먹물을 뿌려 3초간 <b>눈가림</b>(명중률 -50%).'
   },
   engineer: {
     id: 'engineer', name: '엔지니어 지후', emoji: '🔧', role: 'controller', roleLabel: '컨트롤러',
     rarity: 'epic', color: '#8b1a1a', portrait: PORTRAITS.engineer,
     ...CHARACTER_BALANCE.engineer,
-    skillDesc: '전투 시작 직후와 이후 <b>18초마다</b> 옆에 포탑 지후를 설치한다. 포탑은 움직이지 않고 5.5칸 안의 적을 0.25초마다 쏜다 (HP 2400 / ATK 200).'
+    skillDesc: '전투 시작 직후와 이후 <b>18초마다</b> 옆에 포탑 지후를 설치한다. 포탑은 움직이지 않고 5.5칸 안의 적을 <b>0.5초</b>마다 쏜다 (HP 2400 / ATK <b>350</b>).'
   },
   turret: {
     id: 'turret', name: '포탑 지후', emoji: '🗼', role: 'dealer', roleLabel: '딜러',
@@ -3427,7 +3434,7 @@ const CHAR_DB = {
     id: 'awaken', name: '각성 지후', emoji: '💫', role: 'dealer', roleLabel: '딜러',
     rarity: 'legend', color: '#4ae0c4', portrait: PORTRAITS.awaken, portraitAwakened: PORTRAITS.awaken_form,
     ...CHARACTER_BALANCE.awaken,
-    skillDesc: '일반 폼으로 소환된다 (ATK 50 / 사거리 1 / 공속 1s). <b>27초 뒤 체력을 풀회복하고 각성</b>한다 (ATK <b>500</b> / 사거리 5 / 공속 0.5s)'
+    skillDesc: '일반 폼으로 소환된다 (HP 4000 / ATK 50 / 사거리 1 / 공속 1s). <b>27초 뒤 2초간 멈춰 아우라를 뿜으며 각성</b>하고 체력을 풀회복한다 (HP <b>8000</b> / ATK <b>1000</b> / 근접 / 공속 0.5s / 이동속도 4.8칸)'
   },
   berserk: {
     id: 'berserk', name: '광폭화 지후', emoji: '😡', role: 'dealer', roleLabel: '딜러',
@@ -5916,7 +5923,7 @@ const DETAIL_STAT_FIELDS = {
   skidDuration:['스키드마크 지속','s'], skidInterval:['스키드마크 피해 간격','s'], skidDamage:['스키드마크 피해'],
   slowAmount:['이동속도 감소','%'], slowDuration:['둔화 지속','s'], blindChance:['눈가림 확률','%'], blindDuration:['눈가림 지속','s'], blindMissChance:['눈가림 명중률 감소','%'],
   turretCooldown:['포탑 설치 간격','s'], curseHits:['즉사 연속 적중','회'],
-  rouletteChambers:['장탄 수 (실탄 1)','발'], rouletteTurnMax:['총구 돌려 쏘기 (최대)','s'], rouletteSelfDr:['자신 조준 중 피해 감소','%'],
+  rouletteChambers:['장탄 수 (실탄 1)','발'], rouletteSelfTime:['자신에게 쏘기','s'], rouletteTargetTime:['대상에게 쏘기','s'], rouletteSelfDr:['자신 조준 중 피해 감소','%'],
   dimensionSecondShotDelay:['연발 간격','s'], realmDuration:['아공간 지속','s'], realmSpeed:['아공간 이동속도','칸'], realmAtk:['아공간 공격력'], realmEnemySlow:['아공간 적 둔화','%'],
   syringePoisonDps:['독 초당 피해'], syringePoisonDuration:['독 지속','s'], syringeHealPerSec:['아군 초당 회복'], syringeHealDuration:['회복 지속','s'],
   feastDelay:['첫 포식','s'], feastRadius:['포식 범위','칸'], feastAtkPerAlly:['1기당 ATK'], feastHpPerAlly:['1기당 HP'], feastDuration:['포식 지속','s'], feastCooldown:['포식 쿨타임','s'], feastSpeed:['포식 중 이동속도','칸'],
@@ -6093,7 +6100,7 @@ function startRound() {
       if (u.ringEl) u.ringEl.remove();
     });
     state.units = state.units.filter(u => u.alive);
-    document.querySelectorAll('.fx-pulse, .fx-dagger, .fx-projectile, .fx-burst, .fx-death-fx, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam').forEach(el => el.remove());
+    document.querySelectorAll('.fx-pulse, .fx-dagger, .fx-projectile, .fx-syringe-shot, .fx-burst, .fx-death-fx, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam').forEach(el => el.remove());
     state.mines = [];
   } else {
     state.units = [];
@@ -6175,7 +6182,7 @@ function emitCastleWave(castle) {
 }
 
 function clearArenaUnits() {
-  document.querySelectorAll('.unit, .fx-pulse, .fx-dagger, .fx-projectile, .fx-burst, .fx-death-fx, .lone-radius-ring, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam, .fx-orbit-satellite, .fx-dust-zone').forEach(el => el.remove()); if (state) state.mines = [];
+  document.querySelectorAll('.unit, .fx-pulse, .fx-dagger, .fx-projectile, .fx-syringe-shot, .fx-burst, .fx-death-fx, .lone-radius-ring, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam, .fx-orbit-satellite, .fx-dust-zone').forEach(el => el.remove()); if (state) state.mines = [];
 }
 
 function completeDeployAction(delay = 700) {
@@ -6186,6 +6193,8 @@ function completeDeployAction(delay = 700) {
   state.pendingPick = false;
   document.querySelectorAll('.pool-card').forEach(el => el.classList.add('picked'));
   enemyAutoDeployOne();
+  checkTaegukHarmony('ally');
+  checkTaegukHarmony('enemy');
   scheduleTask(nextDeployCycle, delay);
 }
 
@@ -6645,6 +6654,7 @@ function spawnUnit(side, x, y, charId, opts) {
     atkCooldown: Math.random() * 0.3,
     comboStack: 0,
     awakenTimer: baseDef.awakenTime || 0, awakened: false, invincible: 0, berserked: false, form, buffs: {}, hmgInterval: def.atkSpeed,
+    taegukBase: def.taegukForms ? (form === 'harmony' ? (Math.random() < 0.5 ? 'blue' : 'red') : form) : null,
     statuses: { burn: null, freeze: null, poison: null, grudges: {} },
     el, ringEl,
     vx: 0, vy: 0, desVx: 0, desVy: 0, xPrev: x, yPrev: y,
@@ -7183,12 +7193,12 @@ function resetTransientSkillState(u) {
   u._reflectActive = 0; u._impeachmentRemaining = 0;
   u._impeachmentHits = 0; u._charmUsed = false;
   u._mutationTimer = 0; u._mimicTimer = 0; u._mimicState = null;
-  u.trueForm = false; u.berserked = false; u.awakened = false;
+  u.trueForm = false; u.berserked = false; u.awakened = false; u._awakening = null;
   u.invincible = 0; u.stealth = 0;
   u.physLock = 0; u.vx = 0; u.vy = 0; u.desVx = 0; u.desVy = 0;
   u._engaged = false;
   u.el.style.borderColor = '';
-  u.el.classList.remove('charging', 'flying', 'invincible', 'berserk', 'awakened', 'true-form', 'reflecting', 'stealthed');
+  u.el.classList.remove('charging', 'flying', 'invincible', 'berserk', 'awakened', 'awakening', 'true-form', 'reflecting', 'stealthed');
   u.el.querySelectorAll('.rank-reel, .arcade-type').forEach(el => el.remove());
 }
 
@@ -7573,7 +7583,16 @@ function statusAndTimers(u, dt) {
   }
   if (u.def.awakenStats && !u.awakened) {
     u.awakenTimer -= dt;
-    if (u.awakenTimer <= 0) battleAPI.awaken(u);
+    // 각성: 제자리에 멈춰 아우라를 뿜은 뒤(awakenChannel 초) 각성한다
+    if (u.awakenTimer <= 0 && u._awakening == null) {
+      u._awakening = u.def.awakenChannel || 0;
+      u.el.classList.add('awakening');
+      spawnDamageNumber(u, '각성', { heal: true });
+    }
+    if (u._awakening != null) {
+      u._awakening -= dt;
+      if (u._awakening <= 0) { u._awakening = null; u.el.classList.remove('awakening'); battleAPI.awaken(u); }
+    }
   }
   if (u.def.id === "assassin" && u._assassinTeleDone === false && u._assassinTeleTimer != null) {
     u._assassinTeleTimer -= dt;
@@ -7631,6 +7650,11 @@ function aiSteerAndAttack(u, dt) {
     return;
   }
   if (u._flight) return;
+  if (u._awakening != null) {
+    u.desVx = 0; u.desVy = 0; u.physLock = 0;
+    clearTelegraph(u);
+    return;
+  }
   if (u._bolting) {
     u.desVx = 0; u.desVy = 0; u.physLock = 0;
     return;
@@ -8406,10 +8430,11 @@ const battleAPI = {
     if (unit.awakened || !unit.alive) return;
     unit.awakened = true;
     const s = unit.def.awakenStats;
-    Object.assign(unit.def, { atk: s.atk, atkSpeed: s.atkSpeed, range: s.range, hp: s.hp, speed: s.speed != null ? s.speed : unit.def.speed });
+    // awakenStats 는 45px 격자 기준이라 사거리·이동속도만 현재 격자로 변환한다
+    Object.assign(unit.def, { atk: s.atk, atkSpeed: s.atkSpeed, range: s.range * WORLD_SCALE, hp: s.hp, speed: s.speed != null ? s.speed * WORLD_SCALE : unit.def.speed });
     unit.maxHp = s.hp;
     unit.hp = s.hp; // 풀회복
-    unit.isRanged = true; // 각성 후에는 원거리 공격
+    unit.isRanged = !unit.def.isMelee; // 각성 후에도 근접 공격
     unit.atkCooldown = Math.min(unit.atkCooldown, s.atkSpeed);
     const img = unit.el.querySelector('.unit-icon img');
     if (img && unit.def.portraitAwakened) img.src = unit.def.portraitAwakened;
@@ -9464,6 +9489,10 @@ function tickProjectiles(dt) {
   if (!state.pendingProjectiles.length) return;
   const pending = [];
   for (const p of state.pendingProjectiles) {
+    if (p.pierce) {
+      if (tickPiercingShot(p, dt)) pending.push(p); else p.el.remove();
+      continue;
+    }
     if (!p.caster.alive || !p.target.alive || !isHostile(p.caster, p.target)) {
       if (p.el) p.el.remove();
       continue;
@@ -9710,8 +9739,18 @@ function aimRoulette(u, target, atSelf) {
   const angle = atSelf ? -40 : Math.atan2(target.y - u.y, target.x - u.x) * 180 / Math.PI;
   gun.style.transform = `rotate(${angle}deg)`;
 }
-function rouletteTurnTime(u) {
-  return u.def.rouletteTurnMin + Math.random() * (u.def.rouletteTurnMax - u.def.rouletteTurnMin);
+// 자신에게 쏘기까지 1.5초, 대상에게 쏘기까지 2초
+function rouletteTurnTime(u, atSelf) {
+  return atSelf ? u.def.rouletteSelfTime : u.def.rouletteTargetTime;
+}
+// 유닛 위 탄창: 남은 약실은 채운 칸, 쏜 약실은 빈 칸 (실탄 위치는 보여주지 않는다)
+function renderRouletteMag(u) {
+  const rr = u._rr;
+  if (!rr) return;
+  let mag = u.el.querySelector('.rr-mag');
+  if (!mag) { mag = document.createElement('div'); mag.className = 'rr-mag'; u.el.appendChild(mag); }
+  const total = rr.cylinder.rounds.length;
+  mag.innerHTML = Array.from({ length: total }, (_, i) => `<i class="${i < rr.cylinder.index ? 'spent' : ''}"></i>`).join('');
 }
 function setRouletteGuard(u, on) {
   u._selfAim = on;
@@ -9724,13 +9763,14 @@ function rouletteShotFx(u, live) {
   spawnDamageNumber(u, live ? '탕!' : '찰칵', { heal: !live, crit: live });
 }
 function rouletteTick(u, target, distance, dt) {
-  const rr = u._rr || (u._rr = { cylinder: newCylinder(u.def.rouletteChambers), phase: 'idle', t: 0, target: null });
+  if (!u._rr) { u._rr = { cylinder: newCylinder(u.def.rouletteChambers), phase: 'idle', t: 0, target: null }; renderRouletteMag(u); }
+  const rr = u._rr;
   if (rr.phase === 'idle') {
     setRouletteGuard(u, false);
     if (!target) return true;
     aimRoulette(u, target, false);
     if (distance > attackDist(u, target)) { moveToward(u, target.x, target.y, dt, 1, target); return true; }
-    rr.phase = 'self'; rr.t = rouletteTurnTime(u); rr.target = target;
+    rr.phase = 'self'; rr.t = rouletteTurnTime(u, true); rr.target = target;
     setRouletteGuard(u, true);
     aimRoulette(u, null, true);
   }
@@ -9740,6 +9780,7 @@ function rouletteTick(u, target, distance, dt) {
   if (rr.t > 0) return true;
   const live = rr.cylinder.rounds[rr.cylinder.index++];
   if (live || rr.cylinder.index >= rr.cylinder.rounds.length) rr.cylinder = newCylinder(u.def.rouletteChambers);
+  renderRouletteMag(u);
   rouletteShotFx(u, live);
   if (rr.phase === 'self') {
     if (live) {
@@ -9752,7 +9793,7 @@ function rouletteTick(u, target, distance, dt) {
     }
     const next = rr.target && rr.target.alive && isHostile(u, rr.target) ? rr.target : target;
     if (!next || Math.hypot(next.x - u.x, next.y - u.y) > attackDist(u, next) + 20) { rr.phase = 'idle'; return true; }
-    rr.target = next; rr.phase = 'target'; rr.t = rouletteTurnTime(u);
+    rr.target = next; rr.phase = 'target'; rr.t = rouletteTurnTime(u, false);
     setRouletteGuard(u, false);
     aimRoulette(u, next, false);
     return true;
@@ -9763,7 +9804,7 @@ function rouletteTick(u, target, distance, dt) {
     return true;
   }
   if (!rr.target || !rr.target.alive) { rr.phase = 'idle'; return true; }
-  rr.phase = 'self'; rr.t = rouletteTurnTime(u);
+  rr.phase = 'self'; rr.t = rouletteTurnTime(u, true);
   setRouletteGuard(u, true);
   aimRoulette(u, null, true);
   return true;
@@ -9800,32 +9841,45 @@ function openDimensionRealm(caster, target) {
   caster.atkCooldown = Math.min(caster.atkCooldown, 0.4);
 }
 
-// 주사: 사거리 끝까지 모든 유닛을 관통. 적은 독, 아군은 초당 회복.
+// 주사: 사거리 끝까지 날아가며 모든 유닛을 관통하는 투사체. 적은 독, 아군은 초당 회복.
 function syringeShot(caster, target) {
   const angle = Math.atan2(target.y - caster.y, target.x - caster.x);
-  const cs = Math.cos(angle), sn = Math.sin(angle);
-  const length = caster.def.range + unitRadius(target);
-  const half = 12;
-  const shot = document.createElement('div');
-  shot.className = 'fx-lasso fx-syringe';
-  shot.style.left = caster.x + 'px'; shot.style.top = caster.y + 'px';
-  shot.style.width = length + 'px'; shot.style.height = '6px';
-  shot.style.transformOrigin = '0 50%';
-  shot.style.transform = `translateY(-50%) rotate(${angle * 180 / Math.PI}deg)`;
-  worldEl().appendChild(shot);
-  scheduleTask(() => shot.remove(), 260);
-  state.units.slice().forEach(other => {
-    if (other === caster || !other.alive || other.isCastle || !sameRealm(caster, other)) return;
-    const dx = other.x - caster.x, dy = other.y - caster.y;
-    const along = dx * cs + dy * sn, across = Math.abs(-dx * sn + dy * cs);
-    if (along < 0 || along > length || across > half + unitRadius(other)) return;
-    if (isHostile(caster, other)) {
-      battleAPI.applyPoison(other, caster.def.syringePoisonDps, caster.def.syringePoisonDuration, caster);
-    } else if (other.side === caster.side) {
-      other._hot = { hps: caster.def.syringeHealPerSec * supportMult(caster), remaining: caster.def.syringeHealDuration, acc: 0 };
-      spawnDamageNumber(other, '회복', { heal: true });
-    }
+  const el = document.createElement('div');
+  el.className = 'fx-syringe-shot';
+  el.style.left = caster.x + 'px'; el.style.top = caster.y + 'px';
+  el.style.transform = `translate(-50%,-50%) rotate(${angle * 180 / Math.PI}deg)`;
+  worldEl().appendChild(el);
+  state.pendingProjectiles.push({
+    pierce: true, caster, x: caster.x, y: caster.y,
+    cs: Math.cos(angle), sn: Math.sin(angle),
+    left: caster.def.range + unitRadius(target), speed: caster.def.syringeShotSpeed * WORLD_SCALE,
+    hit: new Set([caster.uid]), el
   });
+}
+function syringeHit(caster, other) {
+  if (isHostile(caster, other)) {
+    battleAPI.applyPoison(other, caster.def.syringePoisonDps, caster.def.syringePoisonDuration, caster);
+  } else if (other.side === caster.side) {
+    other._hot = { hps: caster.def.syringeHealPerSec * supportMult(caster), remaining: caster.def.syringeHealDuration, acc: 0 };
+    spawnDamageNumber(other, '회복', { heal: true });
+  }
+}
+function tickPiercingShot(p, dt) {
+  if (state.phase !== 'combat' && state.mode !== 'preview') return false;
+  const step = Math.min(p.left, p.speed * dt);
+  const half = 10;
+  // 이번 스텝에 지나간 선분 위의 유닛을 한 번씩만 맞힌다
+  state.units.slice().forEach(other => {
+    if (p.hit.has(other.uid) || !other.alive || other.isCastle || !sameRealm(p.caster, other)) return;
+    const dx = other.x - p.x, dy = other.y - p.y;
+    const along = dx * p.cs + dy * p.sn, across = Math.abs(-dx * p.sn + dy * p.cs);
+    if (along < -unitRadius(other) || along > step + unitRadius(other) || across > half + unitRadius(other)) return;
+    p.hit.add(other.uid);
+    syringeHit(p.caster, other);
+  });
+  p.x += p.cs * step; p.y += p.sn * step; p.left -= step;
+  p.el.style.left = p.x + 'px'; p.el.style.top = p.y + 'px';
+  return p.left > 0.5;
 }
 function tickHealOverTime(u, dt) {
   const hot = u._hot;
@@ -10007,12 +10061,12 @@ function bikerExplode(u) {
   killUnit(u);
 }
 
-// 촉수: 대상 방향 직선(길이 = 사거리, 폭 = 몸 반지름) 내리치기
+// 촉수: 대상 방향 직선(길이 = 사거리, 폭 = 몸 지름 ×1.5) 내리치기
 function tentacleStrike(caster, target) {
   const angle = Math.atan2(target.y - caster.y, target.x - caster.x);
   const cs = Math.cos(angle), sn = Math.sin(angle);
   const length = caster.def.range + unitRadius(target);
-  const width = unitRadius(caster);
+  const width = unitRadius(caster) * 2 * 1.5;
   showPose(caster, caster.def.portraitAttack, 0.6);
   const strike = document.createElement('div');
   strike.className = 'fx-lasso fx-tentacle';
@@ -10069,6 +10123,7 @@ function setTaegukForm(u, form) {
   const factor = Math.pow(LEVEL_MULT, (u.level || 1) - 1);
   u.def = def;
   u.form = form;
+  if (form !== 'harmony') u.taegukBase = form;
   u.baseMaxHp = def.hp; u.baseAtk = def.atk;
   u.maxHp = Math.round(def.hp * factor); u.hp = u.maxHp;
   def.atk = Math.round(def.atk * factor);
@@ -10085,6 +10140,20 @@ function setTaegukForm(u, form) {
 function checkTaegukHarmony(side) {
   const units = state.units.filter(u => u.alive && u.side === side && u.charId === 'taeguk');
   if (!units.length) return;
+  // 배치 중에는 태극 수가 바뀔 때마다 원래 청·적 기준으로 다시 센다. 수가 어긋나면 조화가 풀린다.
+  if (state.phase !== 'combat') {
+    const baseBlue = units.filter(u => u.taegukBase === 'blue').length;
+    const baseRed = units.filter(u => u.taegukBase === 'red').length;
+    const harmony = baseBlue > 0 && baseBlue === baseRed;
+    units.forEach(u => {
+      const want = harmony ? 'harmony' : u.taegukBase;
+      if (u.form === want) return;
+      setTaegukForm(u, want);
+      spawnBurst(u.el, harmony ? '#b04ad9' : (want === 'blue' ? '#3a7bd5' : '#d53a3a'));
+      if (harmony) spawnDamageNumber(u, '극의 조화', { heal: true });
+    });
+    return;
+  }
   const harmonized = units.some(u => u.form === 'harmony');
   const blue = units.filter(u => u.form === 'blue').length;
   const red = units.filter(u => u.form === 'red').length;
