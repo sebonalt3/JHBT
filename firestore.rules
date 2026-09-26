@@ -38,6 +38,18 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    // 경쟁전 리더보드: 티어 점수와 경쟁전 전적, 마지막 3:3 덱
+    function validCompLeaderboard(data) {
+      return data.keys().hasAll(['nickname', 'tp', 'wins', 'losses', 'deck', 'updatedAt'])
+        && data.keys().hasOnly(['nickname', 'tp', 'wins', 'losses', 'deck', 'updatedAt'])
+        && data.nickname is string && data.nickname.size() > 0 && data.nickname.size() <= 12
+        && data.tp is int && data.tp >= 0 && data.tp <= 999999
+        && data.wins is int && data.wins >= 0 && data.wins <= 99999
+        && data.losses is int && data.losses >= 0 && data.losses <= 99999
+        && validDeck(data.deck) && data.deck.size() <= 3
+        && data.updatedAt is timestamp;
+    }
+
     function validBackup(data) {
       return data.keys().hasAll(['payload', 'updatedAt'])
         && data.keys().hasOnly(['payload', 'updatedAt'])
@@ -56,6 +68,12 @@ service cloud.firestore {
     match /backups/{userId} {
       allow get, delete: if owner(userId);
       allow create, update: if owner(userId) && validBackup(request.resource.data);
+    }
+
+    match /compLeaderboard/{userId} {
+      allow get, list: if true;
+      allow delete: if owner(userId);
+      allow create, update: if owner(userId) && validCompLeaderboard(request.resource.data);
     }
 
     match /leaderboard/{userId} {
